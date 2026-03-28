@@ -1,11 +1,10 @@
-// ============================================
-// Boarding Detail Page
-// ============================================
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { FiMapPin, FiPhone, FiUser, FiHeart, FiArrowLeft, FiTrash2 } from 'react-icons/fi';
+import { FiMapPin, FiPhone, FiUser, FiHeart, FiArrowLeft, FiTrash2, FiExternalLink, FiCalendar } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+
+const IMAGE_BASE = 'http://localhost:5001/uploads/';
 
 const BoardingDetail = () => {
   const { id } = useParams();
@@ -22,22 +21,16 @@ const BoardingDetail = () => {
       try {
         const res = await api.get(`/boardings/${id}`);
         setBoarding(res.data.boarding);
-      } catch {
-        setError('Boarding not found.');
-      } finally {
-        setLoading(false);
-      }
+      } catch { setError('Boarding not found.'); }
+      finally { setLoading(false); }
     };
-
     const fetchFavStatus = async () => {
       if (!isAuth) return;
       try {
         const res = await api.get('/favorites');
-        const favIds = res.data.favorites.map((f) => f._id);
-        setIsFav(favIds.includes(id));
+        setIsFav(res.data.favorites.map(f => f._id).includes(id));
       } catch {}
     };
-
     fetchBoarding();
     fetchFavStatus();
   }, [id, isAuth]);
@@ -46,159 +39,163 @@ const BoardingDetail = () => {
     if (!isAuth) { navigate('/login'); return; }
     setFavLoading(true);
     try {
-      if (isFav) {
-        await api.delete(`/favorites/${id}`);
-        setIsFav(false);
-      } else {
-        await api.post(`/favorites/${id}`);
-        setIsFav(true);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setFavLoading(false);
-    }
+      if (isFav) { await api.delete(`/favorites/${id}`); setIsFav(false); }
+      else { await api.post(`/favorites/${id}`); setIsFav(true); }
+    } finally { setFavLoading(false); }
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this boarding?')) return;
-    try {
-      await api.delete(`/boardings/${id}`);
-      navigate('/');
-    } catch (err) {
-      alert(err.response?.data?.message || 'Delete failed');
-    }
+    if (!window.confirm('Delete this boarding listing?')) return;
+    try { await api.delete(`/boardings/${id}`); navigate('/'); }
+    catch (err) { alert(err.response?.data?.message || 'Delete failed'); }
   };
 
-  if (loading) return <div className="spinner-container"><div className="spinner-border text-primary" /></div>;
-  if (error) return <div className="container py-5 text-center"><p style={{color:'#ef4444'}}>{error}</p><Link to="/"><button className="btn-primary-custom mt-2">Go Home</button></Link></div>;
+  if (loading) return <div className="spinner-container"><div className="spinner-border" /></div>;
+  if (error) return (
+    <div className="container py-5 text-center">
+      <div className="empty-state"><div className="icon">😕</div><h4>{error}</h4></div>
+      <Link to="/"><button className="btn-primary-custom mt-2">Go Home</button></Link>
+    </div>
+  );
 
-  const imageUrl = boarding.image ? `http://localhost:5001/uploads/${boarding.image}` : null;
+  const imageUrl = boarding.image ? `${IMAGE_BASE}${boarding.image}` : null;
   const isOwner = user && boarding.owner?._id === user.id;
 
   return (
-    <div className="container py-5" style={{ maxWidth: 900 }}>
-      {/* Back Button */}
-      <button className="btn-outline-custom mb-4" onClick={() => navigate(-1)} style={{ fontSize:'0.875rem' }}>
-        <FiArrowLeft style={{marginRight:6}} />Back
-      </button>
-
-      <div className="row g-4">
-        {/* Image */}
-        <div className="col-12">
-          {imageUrl ? (
-            <img src={imageUrl} alt={boarding.title} className="detail-image" />
-          ) : (
-            <div className="detail-image-placeholder">🏠</div>
-          )}
+    <div style={{background:'var(--cream)',minHeight:'100vh'}}>
+      {/* Back bar */}
+      <div style={{background:'var(--white)',borderBottom:'1px solid var(--parchment)',padding:'0.8rem 0'}}>
+        <div className="container">
+          <button className="btn-ghost" onClick={() => navigate(-1)} style={{fontSize:'0.875rem'}}>
+            <FiArrowLeft size={14} />Back to listings
+          </button>
         </div>
+      </div>
 
-        {/* Main Info */}
-        <div className="col-md-8">
-          <div className="d-flex align-items-start justify-content-between mb-2">
-            <h1 style={{ fontFamily:'var(--font-heading)', fontSize:'1.8rem', fontWeight:800, color:'var(--dark)' }}>
-              {boarding.title}
-            </h1>
-            {isAuth && (
-              <button className="fav-btn ms-3" onClick={handleFavorite} disabled={favLoading}>
-                <FiHeart className={`heart ${isFav ? 'active' : ''}`} style={{ fontSize:'1.8rem' }} />
-              </button>
-            )}
-          </div>
+      <div className="container py-4" style={{maxWidth:1000}}>
+        <div className="row g-4">
+          {/* Left col */}
+          <div className="col-md-8">
+            {/* Image */}
+            {imageUrl
+              ? <img src={imageUrl} alt={boarding.title} className="detail-image" />
+              : <div className="detail-image-placeholder">🏠</div>}
 
-          <p className="card-location mb-3" style={{ fontSize:'1rem' }}>
-            <FiMapPin /> {boarding.location}
-          </p>
-
-          <div className="d-flex flex-wrap gap-2 mb-3">
-            <span className="badge-room" style={{ fontSize:'0.85rem', padding:'0.35rem 0.9rem' }}>{boarding.roomType}</span>
-            {boarding.amenities?.map((a, i) => (
-              <span key={i} className="badge-amenity" style={{ fontSize:'0.85rem' }}>{a}</span>
-            ))}
-          </div>
-
-          <div style={{ background:'#f8fafc', borderRadius:12, padding:'1.2rem', marginBottom:'1.5rem', border:'1px solid var(--border)' }}>
-            <h5 style={{ fontFamily:'var(--font-heading)', fontWeight:700, marginBottom:'0.6rem' }}>Description</h5>
-            <p style={{ color:'#475569', lineHeight:1.7 }}>{boarding.description}</p>
-          </div>
-
-          {/* Coordinates */}
-          {boarding.lat && boarding.lng && (
-            <div style={{ background:'#eff6ff', borderRadius:12, padding:'1rem', marginBottom:'1.5rem', border:'1px solid #bfdbfe' }}>
-              <h6 style={{ fontFamily:'var(--font-heading)', fontWeight:700, color:'#1d4ed8', marginBottom:'0.3rem' }}>📍 GPS Coordinates</h6>
-              <p style={{ fontSize:'0.875rem', color:'#1e40af', marginBottom:0 }}>
-                Lat: {boarding.lat}, Lng: {boarding.lng}
+            {/* Title & badges */}
+            <div style={{marginTop:'1.5rem',marginBottom:'1.2rem'}}>
+              <div className="d-flex flex-wrap gap-2 mb-2">
+                <span className="room-pill" style={{fontSize:'0.82rem',padding:'0.3rem 0.9rem',borderRadius:'50px',background:'var(--terracotta)',color:'#fff'}}>{boarding.roomType}</span>
+                {boarding.amenities?.slice(0,4).map((a,i) => <span key={i} className="badge-amenity">{a}</span>)}
+              </div>
+              <h1 style={{fontFamily:'var(--font-display)',fontSize:'2rem',fontWeight:700,color:'var(--ink)',marginBottom:'0.5rem'}}>{boarding.title}</h1>
+              <p style={{color:'var(--muted)',display:'flex',alignItems:'center',gap:'0.4rem',fontSize:'0.95rem'}}>
+                <FiMapPin size={14} color="var(--terracotta)" />{boarding.location}
               </p>
-              <a
-                href={`https://maps.google.com/?q=${boarding.lat},${boarding.lng}`}
-                target="_blank" rel="noreferrer"
-                style={{ fontSize:'0.85rem', color:'#2563eb', fontWeight:600 }}
-              >
-                Open in Google Maps →
-              </a>
             </div>
-          )}
 
-          {/* Owner Actions */}
-          {isOwner && (
-            <button className="btn btn-danger" onClick={handleDelete} style={{ borderRadius:10 }}>
-              <FiTrash2 style={{marginRight:6}} />Delete This Boarding
-            </button>
-          )}
-        </div>
+            {/* Description */}
+            <div className="description-box mb-3">
+              <h5>About this place</h5>
+              <p>{boarding.description}</p>
+            </div>
 
-        {/* Sidebar */}
-        <div className="col-md-4">
-          <div style={{ background:'#fff', borderRadius:'var(--radius)', padding:'1.5rem', boxShadow:'var(--shadow)', border:'1px solid var(--border)', position:'sticky', top:90 }}>
-            <p className="card-price" style={{ fontSize:'1.8rem', marginBottom:'0.3rem' }}>
-              LKR {Number(boarding.price).toLocaleString()}
-              <span style={{ fontSize:'0.85rem' }}>/month</span>
-            </p>
-
-            <hr />
-
-            {boarding.contact && (
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <FiPhone color="#2563eb" />
-                <div>
-                  <div style={{ fontSize:'0.78rem', color:'#94a3b8' }}>Contact</div>
-                  <div style={{ fontWeight:600 }}>{boarding.contact}</div>
+            {/* All amenities */}
+            {boarding.amenities?.length > 0 && (
+              <div style={{background:'var(--white)',borderRadius:'var(--radius)',padding:'1.3rem',border:'1px solid var(--parchment)',marginBottom:'1rem'}}>
+                <h5 style={{fontFamily:'var(--font-display)',fontSize:'1.1rem',marginBottom:'0.8rem'}}>Amenities</h5>
+                <div className="d-flex flex-wrap gap-2">
+                  {boarding.amenities.map((a,i) => (
+                    <span key={i} style={{background:'var(--forest-light)',color:'var(--forest)',padding:'0.35rem 0.9rem',borderRadius:'50px',fontSize:'0.85rem',fontWeight:500}}>✓ {a}</span>
+                  ))}
                 </div>
               </div>
             )}
 
-            {boarding.owner && (
-              <div className="d-flex align-items-center gap-2 mb-3">
-                <FiUser color="#2563eb" />
+            {/* Map coordinates */}
+            {boarding.lat && boarding.lng && (
+              <div className="coords-box mb-3">
                 <div>
-                  <div style={{ fontSize:'0.78rem', color:'#94a3b8' }}>Listed by</div>
-                  <div style={{ fontWeight:600 }}>{boarding.owner.name}</div>
-                  <div style={{ fontSize:'0.8rem', color:'#94a3b8' }}>{boarding.owner.email}</div>
+                  <div style={{fontSize:'0.75rem',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em',color:'var(--gold)',marginBottom:'0.2rem'}}>📍 GPS Location</div>
+                  <div style={{fontSize:'0.9rem',color:'var(--ink-soft)',fontWeight:500}}>{boarding.lat}, {boarding.lng}</div>
                 </div>
+                <a href={`https://maps.google.com/?q=${boarding.lat},${boarding.lng}`} target="_blank" rel="noreferrer">
+                  <button className="btn-ghost" style={{fontSize:'0.82rem',padding:'0.4rem 0.9rem'}}>
+                    <FiExternalLink size={13} />Open Map
+                  </button>
+                </a>
               </div>
             )}
 
-            <div style={{ fontSize:'0.78rem', color:'#94a3b8', marginTop:'0.5rem' }}>
-              Listed on {new Date(boarding.createdAt).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}
-            </div>
-
-            {isAuth ? (
-              <button
-                className={`w-100 mt-3 ${isFav ? 'btn-outline-custom' : 'btn-accent-custom'}`}
-                onClick={handleFavorite}
-                disabled={favLoading}
-                style={{ justifyContent:'center', padding:'0.7rem' }}
-              >
-                <FiHeart style={{marginRight:6}} />
-                {isFav ? 'Remove from Favorites' : 'Save to Favorites'}
+            {/* Delete button for owner */}
+            {isOwner && (
+              <button onClick={handleDelete}
+                style={{background:'#fef2f0',color:'#c4622d',border:'1.5px solid #f5d5c8',borderRadius:'10px',padding:'0.6rem 1.2rem',fontWeight:600,cursor:'pointer',fontSize:'0.875rem',display:'flex',alignItems:'center',gap:'0.5rem'}}>
+                <FiTrash2 size={14} />Delete This Listing
               </button>
-            ) : (
-              <Link to="/login">
-                <button className="btn-primary-custom w-100 mt-3 justify-content-center">
-                  Login to Save
-                </button>
-              </Link>
             )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="col-md-4">
+            <div className="detail-sidebar">
+              <div className="detail-price">
+                LKR {Number(boarding.price).toLocaleString()}
+                <span style={{display:'block',fontSize:'0.85rem',fontFamily:'var(--font-body)',fontWeight:400,color:'var(--muted)',marginTop:'0.1rem'}}>per month</span>
+              </div>
+
+              <div style={{margin:'1.2rem 0',borderTop:'1px solid var(--parchment)'}} />
+
+              {boarding.contact && (
+                <div className="info-row">
+                  <div className="info-icon"><FiPhone size={15} /></div>
+                  <div><div className="info-label">Contact</div><div className="info-value">{boarding.contact}</div></div>
+                </div>
+              )}
+
+              {boarding.owner && (
+                <div className="info-row">
+                  <div className="info-icon"><FiUser size={15} /></div>
+                  <div>
+                    <div className="info-label">Listed by</div>
+                    <div className="info-value">{boarding.owner.name}</div>
+                    <div style={{fontSize:'0.78rem',color:'var(--muted)'}}>{boarding.owner.email}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="info-row">
+                <div className="info-icon"><FiCalendar size={15} /></div>
+                <div>
+                  <div className="info-label">Listed on</div>
+                  <div className="info-value">{new Date(boarding.createdAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</div>
+                </div>
+              </div>
+
+              <div style={{marginTop:'1.2rem'}}>
+                {isAuth ? (
+                  <button onClick={handleFavorite} disabled={favLoading}
+                    className={isFav ? 'btn-ghost w-100 justify-content-center' : 'btn-primary-custom w-100 justify-content-center'}
+                    style={{padding:'0.75rem',fontSize:'0.9rem',borderRadius:'12px'}}>
+                    <FiHeart fill={isFav ? 'currentColor' : 'none'} size={15} />
+                    {isFav ? 'Saved to Favourites' : 'Save to Favourites'}
+                  </button>
+                ) : (
+                  <Link to="/login">
+                    <button className="btn-primary-custom w-100 justify-content-center" style={{padding:'0.75rem',fontSize:'0.9rem',borderRadius:'12px'}}>
+                      Login to Save
+                    </button>
+                  </Link>
+                )}
+              </div>
+
+              {boarding.contact && (
+                <a href={`tel:${boarding.contact}`}>
+                  <button className="btn-ghost w-100 justify-content-center mt-2" style={{padding:'0.7rem',fontSize:'0.9rem',borderRadius:'12px'}}>
+                    <FiPhone size={14} />Call Now
+                  </button>
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </div>
