@@ -1,150 +1,172 @@
+// ============================================
+// Add Boarding Page
+// ============================================
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUpload, FiMapPin, FiPhone, FiInfo, FiCheck } from 'react-icons/fi';
+import { FiUpload, FiMapPin, FiDollarSign, FiPhone } from 'react-icons/fi';
 import api from '../api/axios';
 
 const AddBoarding = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title:'', description:'', price:'', location:'', lat:'', lng:'', roomType:'Single', amenities:'', contact:'' });
+  const [form, setForm] = useState({
+    title: '', description: '', price: '', location: '',
+    lat: '', lng: '', roomType: 'Single', amenities: '', contact: '',
+  });
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleChange = e => { setForm({...form,[e.target.name]:e.target.value}); setError(''); };
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError('');
+  };
 
-  const handleImageChange = e => {
+  const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setImage(file);
-    setPreview(URL.createObjectURL(file));
+    // Create preview URL
+    const url = URL.createObjectURL(file);
+    setPreview(url);
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); setError(''); setSuccess('');
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    // Use FormData for multipart (image upload)
     const formData = new FormData();
-    Object.entries(form).forEach(([k,v]) => formData.append(k,v));
+    Object.entries(form).forEach(([key, val]) => formData.append(key, val));
     if (image) formData.append('image', image);
+
     try {
-      await api.post('/boardings', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setSuccess('Boarding listed successfully! Redirecting...');
+      await api.post('/boardings', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setSuccess('Boarding added successfully! Redirecting...');
       setTimeout(() => navigate('/'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add boarding.');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.message || 'Failed to add boarding. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{background:'var(--cream)',minHeight:'100vh'}}>
+    <div>
       <div className="page-header">
         <div className="container">
-          <h1>🏠 List a Boarding Place</h1>
-          <p>Fill in the details below to publish your listing</p>
+          <h1>🏠 Add New Boarding</h1>
+          <p>Fill in the details to list your boarding place</p>
         </div>
       </div>
 
-      <div className="container pb-5" style={{maxWidth:760}}>
-        {error && <div className="alert-custom alert-danger-custom mb-3">⚠️ {error}</div>}
-        {success && <div className="alert-custom alert-success-custom mb-3"><FiCheck /> {success}</div>}
+      <div className="container pb-5" style={{ maxWidth: 760 }}>
+        {error && <div className="alert-custom alert-danger-custom mb-3">{error}</div>}
+        {success && <div className="alert-custom alert-success-custom mb-3">{success}</div>}
 
-        <form onSubmit={handleSubmit}>
-          {/* Basic Info */}
-          <div className="form-section">
-            <div className="form-section-title">📝 Basic Information</div>
+        <div style={{ background:'#fff', borderRadius:'var(--radius-lg)', padding:'2rem', boxShadow:'var(--shadow)', border:'1px solid var(--border)' }}>
+          <form onSubmit={handleSubmit}>
+            {/* Title */}
             <div className="mb-3">
               <label className="form-label">Boarding Title *</label>
-              <input type="text" name="title" className="form-control"
-                placeholder="e.g. Cozy Single Room near University of Peradeniya"
+              <input type="text" name="title" className="form-control" placeholder="e.g. Cozy Single Room near University of Peradeniya"
                 value={form.title} onChange={handleChange} required />
             </div>
+
+            {/* Description */}
             <div className="mb-3">
               <label className="form-label">Description *</label>
-              <textarea name="description" className="form-control" rows={5}
-                placeholder="Describe the room, house rules, nearby facilities, and what makes it special..."
+              <textarea name="description" className="form-control" rows={4}
+                placeholder="Describe the boarding place, rules, nearby facilities..."
                 value={form.description} onChange={handleChange} required />
             </div>
-            <div className="row g-3">
+
+            <div className="row g-3 mb-3">
+              {/* Price */}
               <div className="col-md-6">
-                <label className="form-label">Monthly Price (LKR) *</label>
+                <label className="form-label"><FiDollarSign size={13} style={{marginRight:4}} />Monthly Price (LKR) *</label>
                 <input type="number" name="price" className="form-control" placeholder="e.g. 8000"
                   value={form.price} onChange={handleChange} required min="0" />
               </div>
+              {/* Room Type */}
               <div className="col-md-6">
                 <label className="form-label">Room Type</label>
                 <select name="roomType" className="form-select" value={form.roomType} onChange={handleChange}>
-                  {['Single','Double','Triple','Annex','Other'].map(t => <option key={t}>{t}</option>)}
+                  <option>Single</option>
+                  <option>Double</option>
+                  <option>Triple</option>
+                  <option>Annex</option>
+                  <option>Other</option>
                 </select>
               </div>
             </div>
-          </div>
 
-          {/* Location */}
-          <div className="form-section">
-            <div className="form-section-title"><FiMapPin size={14} /> Location Details</div>
+            {/* Location */}
             <div className="mb-3">
-              <label className="form-label">Address / Location *</label>
+              <label className="form-label"><FiMapPin size={13} style={{marginRight:4}} />Location / Address *</label>
               <input type="text" name="location" className="form-control" placeholder="e.g. Asgiriya, Kandy"
                 value={form.location} onChange={handleChange} required />
             </div>
-            <div className="row g-3 mb-2">
+
+            <div className="row g-3 mb-3">
+              {/* Latitude */}
               <div className="col-md-6">
-                <label className="form-label">Latitude</label>
+                <label className="form-label">Latitude (Google Maps)</label>
                 <input type="number" name="lat" step="any" className="form-control" placeholder="e.g. 7.2906"
                   value={form.lat} onChange={handleChange} />
               </div>
+              {/* Longitude */}
               <div className="col-md-6">
-                <label className="form-label">Longitude</label>
+                <label className="form-label">Longitude (Google Maps)</label>
                 <input type="number" name="lng" step="any" className="form-control" placeholder="e.g. 80.6337"
                   value={form.lng} onChange={handleChange} />
               </div>
             </div>
-            <div style={{background:'var(--gold-light)',border:'1px solid #e8d5a0',borderRadius:'10px',padding:'0.8rem 1rem',fontSize:'0.82rem',color:'var(--ink-soft)',display:'flex',alignItems:'flex-start',gap:'0.5rem'}}>
-              <FiInfo size={14} style={{marginTop:'0.1rem',flexShrink:0,color:'var(--gold)'}} />
-              <span>Get coordinates from <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{color:'var(--terracotta)',fontWeight:600}}>Google Maps</a> → right-click your location → copy the lat/lng numbers shown.</span>
-            </div>
-          </div>
 
-          {/* Contact & Amenities */}
-          <div className="form-section">
-            <div className="form-section-title"><FiPhone size={14} /> Contact & Amenities</div>
+            <p style={{ fontSize:'0.8rem', color:'#94a3b8', marginTop:'-0.5rem', marginBottom:'1rem' }}>
+              💡 Get coordinates from <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{color:'#2563eb'}}>Google Maps</a> → right-click location → copy lat/lng
+            </p>
+
+            {/* Contact */}
             <div className="mb-3">
-              <label className="form-label">Contact Number</label>
+              <label className="form-label"><FiPhone size={13} style={{marginRight:4}} />Contact Number</label>
               <input type="text" name="contact" className="form-control" placeholder="e.g. 077-1234567"
                 value={form.contact} onChange={handleChange} />
             </div>
-            <div className="mb-0">
-              <label className="form-label">Amenities <span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>(comma-separated)</span></label>
+
+            {/* Amenities */}
+            <div className="mb-3">
+              <label className="form-label">Amenities (comma-separated)</label>
               <input type="text" name="amenities" className="form-control"
-                placeholder="e.g. WiFi, Parking, Water, Meals, AC"
+                placeholder="e.g. WiFi, Parking, Water, Meals"
                 value={form.amenities} onChange={handleChange} />
             </div>
-          </div>
 
-          {/* Image Upload */}
-          <div className="form-section">
-            <div className="form-section-title"><FiUpload size={14} /> Photo</div>
-            <label htmlFor="imgUpload" style={{cursor:'pointer',display:'block'}}>
-              <div className="image-upload-area">
-                {preview
-                  ? <img src={preview} alt="Preview" style={{width:'100%',maxHeight:260,objectFit:'cover',borderRadius:10}} />
-                  : <>
-                    <div style={{fontSize:'2.5rem',marginBottom:'0.5rem'}}>📷</div>
-                    <div style={{fontWeight:600,color:'var(--ink-soft)',marginBottom:'0.2rem'}}>Click to upload a photo</div>
-                    <div style={{fontSize:'0.82rem',color:'var(--muted)'}}>JPEG, PNG or WebP — max 5MB</div>
-                  </>}
-              </div>
-            </label>
-            <input id="imgUpload" type="file" accept="image/*" onChange={handleImageChange} style={{display:'none'}} />
-          </div>
+            {/* Image Upload */}
+            <div className="mb-4">
+              <label className="form-label"><FiUpload size={13} style={{marginRight:4}} />Upload Image</label>
+              <input type="file" className="form-control" accept="image/*" onChange={handleImageChange} />
+              {preview && (
+                <div className="mt-2">
+                  <img src={preview} alt="Preview" style={{ width:'100%', maxHeight:220, objectFit:'cover', borderRadius:10 }} />
+                </div>
+              )}
+            </div>
 
-          {/* Submit */}
-          <button type="submit" className="btn-primary-custom w-100 justify-content-center" disabled={loading}
-            style={{padding:'0.95rem',fontSize:'1rem',borderRadius:'14px',boxShadow:'0 8px 24px rgba(196,98,45,0.35)'}}>
-            {loading ? <><span className="spinner-border spinner-border-sm me-2" />Publishing...</> : '🏠 Publish Listing'}
-          </button>
-        </form>
+            {/* Submit */}
+            <button type="submit" className="btn-primary-custom w-100 justify-content-center" disabled={loading}
+              style={{ padding:'0.8rem', fontSize:'1rem' }}>
+              {loading ? (
+                <><span className="spinner-border spinner-border-sm me-2" />Adding Boarding...</>
+              ) : '🏠 Add Boarding'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
