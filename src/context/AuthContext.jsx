@@ -1,6 +1,3 @@
-// ============================================
-// Auth Context — global user state
-// ============================================
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
@@ -8,9 +5,8 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true); // initial load
+  const [loading, setLoading] = useState(true);
 
-  // On mount, restore auth from localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem('bf_token');
     const storedUser = localStorage.getItem('bf_user');
@@ -21,7 +17,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Login: save to state + localStorage
   const login = (userData, jwtToken) => {
     setUser(userData);
     setToken(jwtToken);
@@ -29,7 +24,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('bf_user', JSON.stringify(userData));
   };
 
-  // Logout: clear everything
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -44,5 +38,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook
 export const useAuth = () => useContext(AuthContext);
