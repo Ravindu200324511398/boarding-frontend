@@ -24,6 +24,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('bf_user', JSON.stringify(userData));
   };
 
+  const updateUser = (userData, jwtToken) => {
+    const merged = { ...user, ...userData };
+    setUser(merged);
+    localStorage.setItem('bf_user', JSON.stringify(merged));
+    if (jwtToken) {
+      setToken(jwtToken);
+      localStorage.setItem('bf_token', jwtToken);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -32,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading, isAuth: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, updateUser, loading, isAuth: !!token }}>
       {children}
     </AuthContext.Provider>
   );

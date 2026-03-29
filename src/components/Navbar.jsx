@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import {
-  FiHome, FiPlusCircle, FiHeart, FiMap,
-  FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser
-} from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiHeart, FiMap, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser } from 'react-icons/fi';
+
+const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
 const Navbar = () => {
   const { isAuth, user, logout } = useAuth();
@@ -14,6 +13,18 @@ const Navbar = () => {
 
   const handleLogout = () => { logout(); navigate('/login'); setOpen(false); };
   const isActive = (path) => location.pathname === path ? 'active' : '';
+
+  const NavAvatar = ({ size = 26 }) => {
+    const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarUrl = user?.avatar ? `${AVATAR_BASE}${user.avatar}` : null;
+    return (
+      <div style={{ width: size, height: size, borderRadius: '50%', background: avatarUrl ? 'transparent' : 'linear-gradient(135deg, #2563eb, #7c3aed)', border: '2px solid #e2e8f0', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {avatarUrl
+          ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
+          : <span style={{ fontSize: size * 0.38, fontWeight: 800, color: '#fff' }}>{initials}</span>}
+      </div>
+    );
+  };
 
   return (
     <nav className="bf-navbar">
@@ -41,12 +52,9 @@ const Navbar = () => {
                   </button>
                 </Link>
               )}
-              {/* Profile link */}
               <Link to="/profile">
-                <button style={{ background: '#f1f5f9', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.45rem 1rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-body)' }}>
-                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.65rem', fontWeight: 800 }}>
-                    {user?.name?.charAt(0).toUpperCase()}
-                  </div>
+                <button style={{ background: '#f1f5f9', color: '#0f172a', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.4rem 0.9rem', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
+                  <NavAvatar size={24} />
                   {user?.name?.split(' ')[0]}
                 </button>
               </Link>
@@ -85,10 +93,10 @@ const Navbar = () => {
               <>
                 <Link to="/add" className={`nav-link ${isActive('/add')}`} onClick={() => setOpen(false)}><FiPlusCircle style={{ marginRight: 6 }} />Add Boarding</Link>
                 <Link to="/favorites" className={`nav-link ${isActive('/favorites')}`} onClick={() => setOpen(false)}><FiHeart style={{ marginRight: 6 }} />Favorites</Link>
-                <Link to="/profile" className={`nav-link ${isActive('/profile')}`} onClick={() => setOpen(false)}><FiUser style={{ marginRight: 6 }} />My Profile</Link>
-                {user?.isAdmin && (
-                  <Link to="/admin/dashboard" className="nav-link" onClick={() => setOpen(false)}><FiShield style={{ marginRight: 6 }} />Admin Panel</Link>
-                )}
+                <Link to="/profile" className={`nav-link ${isActive('/profile')}`} onClick={() => setOpen(false)}>
+                  <NavAvatar size={18} /><span style={{ marginLeft: 6 }}>My Profile</span>
+                </Link>
+                {user?.isAdmin && <Link to="/admin/dashboard" className="nav-link" onClick={() => setOpen(false)}><FiShield style={{ marginRight: 6 }} />Admin Panel</Link>}
                 <button onClick={handleLogout} className="nav-link text-start" style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: 500, cursor: 'pointer' }}>
                   <FiLogOut style={{ marginRight: 6 }} />Logout
                 </button>

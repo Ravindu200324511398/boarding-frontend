@@ -2,44 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   FiUser, FiMail, FiLock, FiEdit2, FiSave, FiX, FiTrash2,
-  FiHome, FiMapPin, FiHeart, FiEye, FiEyeOff, FiCheckCircle,
-  FiAlertCircle, FiCamera
+  FiHome, FiMapPin, FiHeart, FiEye, FiEyeOff,
+  FiCheckCircle, FiAlertCircle
 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
+import AvatarUpload from '../components/AvatarUpload';
 
 const IMAGE_BASE = 'http://localhost:5001/uploads/';
 
 const Profile = () => {
-  const { user, login, logout } = useAuth();
+  const { user, login, updateUser } = useAuth();
   const navigate = useNavigate();
 
-  // Profile data
   const [profileData, setProfileData] = useState(null);
   const [boardings, setBoardings] = useState([]);
   const [favCount, setFavCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Edit form
   const [editing, setEditing] = useState(false);
   const [formName, setFormName] = useState('');
   const [formEmail, setFormEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState({ type: '', text: '' });
 
-  // Password section
-  const [showPwSection, setShowPwSection] = useState(false);
+  const [showPw, setShowPw] = useState(false);
   const [currentPw, setCurrentPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [showPw, setShowPw] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
   const [pwMsg, setPwMsg] = useState({ type: '', text: '' });
 
-  // Delete listing
   const [deletingId, setDeletingId] = useState(null);
-
-  // Active tab
   const [tab, setTab] = useState('info');
 
   useEffect(() => {
@@ -60,7 +54,6 @@ const Profile = () => {
     try {
       const res = await api.put('/auth/profile', { name: formName, email: formEmail });
       setProfileData(prev => ({ ...prev, name: res.data.user.name, email: res.data.user.email }));
-      // Update stored auth
       login(res.data.user, res.data.token);
       setEditing(false);
       setSaveMsg({ type: 'success', text: '✓ Profile updated successfully!' });
@@ -78,7 +71,6 @@ const Profile = () => {
     try {
       await api.put('/auth/profile', { currentPassword: currentPw, newPassword: newPw });
       setCurrentPw(''); setNewPw(''); setConfirmPw('');
-      setShowPwSection(false);
       setPwMsg({ type: 'success', text: '✓ Password changed successfully!' });
       setTimeout(() => setPwMsg({ type: '', text: '' }), 3000);
     } catch (err) {
@@ -105,8 +97,6 @@ const Profile = () => {
 
   if (loading) return <div className="spinner-container"><div className="spinner-border text-primary" /></div>;
 
-  const initials = profileData?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
   const tabStyle = (t) => ({
     padding: '0.65rem 1.3rem',
     border: 'none',
@@ -118,27 +108,25 @@ const Profile = () => {
     color: tab === t ? '#2563eb' : '#64748b',
     fontSize: '0.9rem',
     transition: 'all 0.15s',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.4rem',
+    display: 'flex', alignItems: 'center', gap: '0.4rem',
   });
 
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      {/* Header banner */}
-      <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #7c3aed 100%)', padding: '3rem 0 4rem' }}>
+      {/* Banner */}
+      <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #7c3aed 100%)', padding: '3rem 0 4.5rem' }}>
         <div className="container" style={{ maxWidth: 860 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-            {/* Avatar */}
-            <div style={{ position: 'relative' }}>
-              <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'rgba(255,255,255,0.2)', border: '3px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-heading)' }}>
-                {initials}
-              </div>
-            </div>
-            <div style={{ color: '#fff' }}>
-              <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.8rem', fontWeight: 800, margin: 0, marginBottom: '0.2rem' }}>{profileData?.name}</h1>
-              <p style={{ margin: 0, opacity: 0.8, fontSize: '0.9rem' }}>{profileData?.email}</p>
-              <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.7rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '1.5rem', flexWrap: 'wrap' }}>
+
+            {/* ── AvatarUpload replaces the KP circle ── */}
+            <AvatarUpload size={96} showControls={true} />
+
+            <div style={{ color: '#fff', paddingBottom: '0.3rem' }}>
+              <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.8rem', fontWeight: 800, margin: 0, marginBottom: '0.15rem' }}>
+                {user?.name}
+              </h1>
+              <p style={{ margin: 0, opacity: 0.8, fontSize: '0.9rem' }}>{user?.email}</p>
+              <div style={{ display: 'flex', gap: '1.2rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.82rem', opacity: 0.9, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   <FiHome size={13} />{boardings.length} Listing{boardings.length !== 1 ? 's' : ''}
                 </span>
@@ -156,24 +144,18 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Card lifted over banner */}
+      {/* Card */}
       <div className="container" style={{ maxWidth: 860, marginTop: '-2rem', paddingBottom: '3rem' }}>
         <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 8px 40px rgba(15,23,42,0.1)', overflow: 'hidden' }}>
 
           {/* Tabs */}
           <div style={{ borderBottom: '1px solid #e2e8f0', display: 'flex', padding: '0 1.5rem', overflowX: 'auto' }}>
-            <button style={tabStyle('info')} onClick={() => setTab('info')}>
-              <FiUser size={14} /> Personal Info
-            </button>
-            <button style={tabStyle('password')} onClick={() => setTab('password')}>
-              <FiLock size={14} /> Change Password
-            </button>
-            <button style={tabStyle('listings')} onClick={() => setTab('listings')}>
-              <FiHome size={14} /> My Listings ({boardings.length})
-            </button>
+            <button style={tabStyle('info')} onClick={() => setTab('info')}><FiUser size={14} />Personal Info</button>
+            <button style={tabStyle('password')} onClick={() => setTab('password')}><FiLock size={14} />Change Password</button>
+            <button style={tabStyle('listings')} onClick={() => setTab('listings')}><FiHome size={14} />My Listings ({boardings.length})</button>
           </div>
 
-          {/* ── Tab: Personal Info ── */}
+          {/* ── Personal Info ── */}
           {tab === 'info' && (
             <div style={{ padding: '2rem' }}>
               {saveMsg.text && (
@@ -188,18 +170,15 @@ const Profile = () => {
                   <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0.2rem 0 0' }}>Update your name and email address</p>
                 </div>
                 {!editing ? (
-                  <button onClick={() => setEditing(true)}
-                    style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 10, padding: '0.55rem 1.1rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
-                    <FiEdit2 size={14} /> Edit
+                  <button onClick={() => setEditing(true)} style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 10, padding: '0.55rem 1.1rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
+                    <FiEdit2 size={14} />Edit
                   </button>
                 ) : (
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={handleSaveProfile} disabled={saving}
-                      style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, padding: '0.55rem 1.1rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-body)' }}>
+                    <button onClick={handleSaveProfile} disabled={saving} style={{ background: '#2563eb', color: '#fff', border: 'none', borderRadius: 10, padding: '0.55rem 1.1rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-body)' }}>
                       {saving ? <span className="spinner-border spinner-border-sm" /> : <><FiSave size={14} />Save</>}
                     </button>
-                    <button onClick={handleCancelEdit}
-                      style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '0.55rem 1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-body)' }}>
+                    <button onClick={handleCancelEdit} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 10, padding: '0.55rem 1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'var(--font-body)' }}>
                       <FiX size={14} />Cancel
                     </button>
                   </div>
@@ -207,20 +186,12 @@ const Profile = () => {
               </div>
 
               <div className="row g-3">
-                {/* Name field */}
                 <div className="col-md-6">
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#374151', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Full Name</label>
                   {editing ? (
                     <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #2563eb', borderRadius: 10, overflow: 'hidden' }}>
-                      <span style={{ padding: '0 0.85rem', color: '#2563eb', background: '#eff6ff', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #bfdbfe' }}>
-                        <FiUser size={15} />
-                      </span>
-                      <input
-                        type="text"
-                        value={formName}
-                        onChange={e => setFormName(e.target.value)}
-                        style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }}
-                      />
+                      <span style={{ padding: '0 0.85rem', color: '#2563eb', background: '#eff6ff', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #bfdbfe' }}><FiUser size={15} /></span>
+                      <input type="text" value={formName} onChange={e => setFormName(e.target.value)} style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }} />
                     </div>
                   ) : (
                     <div style={{ padding: '0.85rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -229,20 +200,12 @@ const Profile = () => {
                   )}
                 </div>
 
-                {/* Email field */}
                 <div className="col-md-6">
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#374151', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email Address</label>
                   {editing ? (
                     <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #2563eb', borderRadius: 10, overflow: 'hidden' }}>
-                      <span style={{ padding: '0 0.85rem', color: '#2563eb', background: '#eff6ff', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #bfdbfe' }}>
-                        <FiMail size={15} />
-                      </span>
-                      <input
-                        type="email"
-                        value={formEmail}
-                        onChange={e => setFormEmail(e.target.value)}
-                        style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }}
-                      />
+                      <span style={{ padding: '0 0.85rem', color: '#2563eb', background: '#eff6ff', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #bfdbfe' }}><FiMail size={15} /></span>
+                      <input type="email" value={formEmail} onChange={e => setFormEmail(e.target.value)} style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }} />
                     </div>
                   ) : (
                     <div style={{ padding: '0.85rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -251,7 +214,6 @@ const Profile = () => {
                   )}
                 </div>
 
-                {/* Account info */}
                 <div className="col-md-6">
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#374151', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account Role</label>
                   <div style={{ padding: '0.85rem 1rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
@@ -269,16 +231,15 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Quick links */}
               <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '0.8rem', flexWrap: 'wrap' }}>
                 <Link to="/favorites">
                   <button style={{ background: '#fdf4ff', color: '#9333ea', border: '1px solid #e9d5ff', borderRadius: 10, padding: '0.55rem 1.1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
-                    <FiHeart size={14} /> View Favorites ({favCount})
+                    <FiHeart size={14} />View Favorites ({favCount})
                   </button>
                 </Link>
                 <Link to="/add">
                   <button style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0', borderRadius: 10, padding: '0.55rem 1.1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
-                    <FiHome size={14} /> Add New Listing
+                    <FiHome size={14} />Add New Listing
                   </button>
                 </Link>
                 {profileData?.isAdmin && (
@@ -292,7 +253,7 @@ const Profile = () => {
             </div>
           )}
 
-          {/* ── Tab: Change Password ── */}
+          {/* ── Change Password ── */}
           {tab === 'password' && (
             <div style={{ padding: '2rem', maxWidth: 480 }}>
               <h4 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: '#0f172a', marginBottom: '0.4rem' }}>Change Password</h4>
@@ -305,38 +266,26 @@ const Profile = () => {
               )}
 
               {[
-                { label: 'Current Password', val: currentPw, set: setCurrentPw, ph: 'Your current password' },
-                { label: 'New Password', val: newPw, set: setNewPw, ph: 'Min. 6 characters' },
-                { label: 'Confirm New Password', val: confirmPw, set: setConfirmPw, ph: 'Repeat new password' },
-              ].map(({ label, val, set, ph }, i) => (
+                { label: 'Current Password', val: currentPw, set: setCurrentPw, ph: 'Your current password', showToggle: true },
+                { label: 'New Password', val: newPw, set: setNewPw, ph: 'Min. 6 characters', showToggle: false },
+                { label: 'Confirm New Password', val: confirmPw, set: setConfirmPw, ph: 'Repeat new password', showToggle: false, isConfirm: true },
+              ].map(({ label, val, set, ph, showToggle, isConfirm }, i) => (
                 <div key={i} style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#374151', marginBottom: '0.5rem' }}>{label}</label>
                   <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}
                     onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
                     onBlurCapture={e => e.currentTarget.style.borderColor = '#e2e8f0'}>
-                    <span style={{ padding: '0 0.85rem', color: '#94a3b8', background: '#f8fafc', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #e2e8f0' }}>
-                      <FiLock size={15} />
-                    </span>
-                    <input
-                      type={showPw ? 'text' : 'password'}
-                      value={val}
-                      onChange={e => set(e.target.value)}
-                      placeholder={ph}
-                      style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }}
-                    />
-                    {i === 0 && (
-                      <button type="button" onClick={() => setShowPw(!showPw)}
-                        style={{ background: 'none', border: 'none', padding: '0 0.85rem', cursor: 'pointer', color: '#94a3b8' }}>
+                    <span style={{ padding: '0 0.85rem', color: '#94a3b8', background: '#f8fafc', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #e2e8f0' }}><FiLock size={15} /></span>
+                    <input type={showPw ? 'text' : 'password'} value={val} onChange={e => set(e.target.value)} placeholder={ph}
+                      style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }} />
+                    {showToggle && (
+                      <button type="button" onClick={() => setShowPw(!showPw)} style={{ background: 'none', border: 'none', padding: '0 0.85rem', cursor: 'pointer', color: '#94a3b8' }}>
                         {showPw ? <FiEyeOff size={15} /> : <FiEye size={15} />}
                       </button>
                     )}
                   </div>
-                  {i === 2 && confirmPw && confirmPw !== newPw && (
-                    <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.25rem' }}>⚠ Passwords don't match</div>
-                  )}
-                  {i === 2 && confirmPw && confirmPw === newPw && (
-                    <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.25rem' }}>✓ Passwords match</div>
-                  )}
+                  {isConfirm && confirmPw && confirmPw !== newPw && <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.25rem' }}>⚠ Passwords don't match</div>}
+                  {isConfirm && confirmPw && confirmPw === newPw && <div style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.25rem' }}>✓ Passwords match</div>}
                 </div>
               ))}
 
@@ -344,14 +293,13 @@ const Profile = () => {
                 💡 Password must be at least 6 characters. Use a mix of letters and numbers for a stronger password.
               </div>
 
-              <button onClick={handleSavePassword} disabled={pwSaving}
-                style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.75rem 2rem', cursor: pwSaving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', opacity: pwSaving ? 0.7 : 1 }}>
+              <button onClick={handleSavePassword} disabled={pwSaving} style={{ background: 'linear-gradient(135deg, #2563eb, #7c3aed)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.75rem 2rem', cursor: pwSaving ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', opacity: pwSaving ? 0.7 : 1 }}>
                 {pwSaving ? <><span className="spinner-border spinner-border-sm" />Saving...</> : <><FiLock size={14} />Update Password</>}
               </button>
             </div>
           )}
 
-          {/* ── Tab: My Listings ── */}
+          {/* ── My Listings ── */}
           {tab === 'listings' && (
             <div style={{ padding: '1.5rem 2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.8rem' }}>
@@ -390,9 +338,7 @@ const Profile = () => {
                           : <div style={{ width: 80, height: 64, background: '#e2e8f0', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', flexShrink: 0 }}>🏠</div>}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.title}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
-                            <FiMapPin size={11} />{b.location}
-                          </div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}><FiMapPin size={11} />{b.location}</div>
                           <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#2563eb' }}>LKR {b.price?.toLocaleString()}/mo</span>
                             <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '0.1rem 0.55rem', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700 }}>{b.roomType}</span>
@@ -400,12 +346,11 @@ const Profile = () => {
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                           <Link to={`/boarding/${b._id}`}>
-                            <button title="View listing" style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <button title="View" style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               <FiEye size={13} />View
                             </button>
                           </Link>
-                          <button onClick={() => handleDeleteBoarding(b._id, b.title)} disabled={deletingId === b._id}
-                            title="Delete listing"
+                          <button onClick={() => handleDeleteBoarding(b._id, b.title)} disabled={deletingId === b._id} title="Delete"
                             style={{ background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '0.5rem 0.8rem', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                             {deletingId === b._id ? <span className="spinner-border spinner-border-sm" style={{ width: '0.8rem', height: '0.8rem' }} /> : <FiTrash2 size={13} />}
                           </button>
@@ -417,6 +362,7 @@ const Profile = () => {
               )}
             </div>
           )}
+
         </div>
       </div>
     </div>
