@@ -30,6 +30,7 @@ const BoardingDetail = () => {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('about');
   const [copied, setCopied] = useState(false);
+  const [activePhoto, setActivePhoto] = useState(0);
 
   const [ratings, setRatings] = useState([]);
   const [avgRating, setAvgRating] = useState(0);
@@ -175,12 +176,50 @@ const BoardingDetail = () => {
 
       {/* ── HERO IMAGE SECTION ── */}
       <div style={{ position: 'relative', height: 420, background: '#0f172a', overflow: 'hidden' }}>
-        {imageUrl ? (
-          <img src={imageUrl} alt={boarding.title}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1e293b, #334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '6rem' }}>🏠</div>
-        )}
+        {(() => {
+          const allImages = boarding.images && boarding.images.length > 0
+            ? boarding.images
+            : imageUrl ? [boarding.image] : [];
+          return allImages.length > 0 ? (
+            <>
+              <img src={`${IMAGE_BASE}${allImages[activePhoto]}`} alt={boarding.title}
+                style={{ width:'100%', height:'100%', objectFit:'cover', opacity:0.85, transition:'opacity 0.3s ease' }} />
+              {allImages.length > 1 && (
+                <>
+                  <button onClick={() => setActivePhoto(p => p === 0 ? allImages.length-1 : p-1)}
+                    style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', background:'rgba(0,0,0,0.5)', border:'none', borderRadius:'50%', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:'1rem', zIndex:5 }}>‹</button>
+                  <button onClick={() => setActivePhoto(p => p === allImages.length-1 ? 0 : p+1)}
+                    style={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', background:'rgba(0,0,0,0.5)', border:'none', borderRadius:'50%', width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:'1rem', zIndex:5 }}>›</button>
+                  <div style={{ position:'absolute', bottom:80, left:'50%', transform:'translateX(-50%)', display:'flex', gap:'0.4rem', zIndex:5 }}>
+                    {allImages.map((_, i) => (
+                      <button key={i} onClick={() => setActivePhoto(i)}
+                        style={{ width: i===activePhoto ? 20 : 8, height:8, borderRadius:4, background: i===activePhoto ? '#fff' : 'rgba(255,255,255,0.5)', border:'none', cursor:'pointer', transition:'all 0.2s', padding:0 }} />
+                    ))}
+                  </div>
+                  <div style={{ position:'absolute', top:70, right:16, background:'rgba(0,0,0,0.5)', color:'#fff', fontSize:'0.78rem', fontWeight:600, padding:'0.25rem 0.7rem', borderRadius:20 }}>
+                    {activePhoto+1} / {allImages.length}
+                  </div>
+                  <div style={{ position:'absolute', bottom:78, right:16, display:'flex', gap:'0.3rem', zIndex:5 }}>
+                    {allImages.slice(0,4).map((img, i) => (
+                      <div key={i} onClick={() => setActivePhoto(i)}
+                        style={{ width:44, height:36, borderRadius:6, overflow:'hidden', cursor:'pointer', border: i===activePhoto ? '2px solid #fff' : '2px solid transparent', opacity: i===activePhoto ? 1 : 0.7, transition:'all 0.15s' }}>
+                        <img src={`${IMAGE_BASE}${img}`} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                      </div>
+                    ))}
+                    {allImages.length > 4 && (
+                      <div style={{ width:44, height:36, borderRadius:6, background:'rgba(0,0,0,0.6)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontSize:'0.72rem', fontWeight:700, cursor:'pointer' }}
+                        onClick={() => setActivePhoto(4)}>
+                        +{allImages.length-4}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#1e293b,#334155)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'6rem' }}>🏠</div>
+          );
+        })()}
 
         {/* Gradient overlay */}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)' }} />

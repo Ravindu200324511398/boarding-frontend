@@ -153,8 +153,8 @@ const AddBoarding = () => {
   });
   const [amenities, setAmenities] = useState([]);
   const [customAmenity, setCustomAmenity] = useState('');
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [images, setImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   // UI state
   const [focused, setFocused] = useState('');
@@ -183,14 +183,22 @@ const AddBoarding = () => {
     }
   };
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setError('Image must be under 5MB'); return; }
-    setImage(file);
-    const reader = new FileReader();
-    reader.onload = ev => setImagePreview(ev.target.result);
-    reader.readAsDataURL(file);
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files);
+    if (images.length + files.length > 8) { setError('Maximum 8 photos allowed'); return; }
+    const oversized = files.find(f => f.size > 5 * 1024 * 1024);
+    if (oversized) { setError('Each image must be under 5MB'); return; }
+    setImages(prev => [...prev, ...files]);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => setImagePreviews(prev => [...prev, ev.target.result]);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (idx) => {
+    setImages(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleGenerate = async () => {
@@ -256,7 +264,9 @@ const AddBoarding = () => {
       const formData = new FormData();
       Object.entries(form).forEach(([k, v]) => { if (v !== '') formData.append(k, v); });
       amenities.forEach(a => formData.append('amenities', a));
-      if (image) formData.append('image', image);
+      if (images.length > 0) {
+        images.forEach(img => formData.append('images', img));
+      }
 
       await api.post('/boardings', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -446,15 +456,31 @@ const AddBoarding = () => {
           <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1.5rem' }}>
             <SectionHead number="4" title="Photo & Map Location" sub="Optional but recommended" />
             <div className="row g-3">
-              <div className="col-md-6">
-                <Field label="Listing Photo">
-                  <label style={{ display: 'block', cursor: 'pointer' }}>
-                    <div style={{ border: `2px dashed ${imagePreview ? '#2563eb' : '#e2e8f0'}`, borderRadius: 12, overflow: 'hidden', background: '#f8fafc', minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {imagePreview ? <img src={imagePreview} alt="preview" style={{ width: '100%', height: 140, objectFit: 'cover' }} /> : <div style={{ textAlign: 'center' }}><FiUpload size={28} color="#94a3b8" /><div style={{ fontSize: '0.85rem' }}>Click to upload</div></div>}
-                    </div>
-                    <input type="file" accept="image/*" onChange={handleImage} style={{ display: 'none' }} />
-                  </label>
-                  {imagePreview && <button type="button" onClick={() => { setImage(null); setImagePreview(null); }} style={{ marginTop: '0.5rem', background: '#fef2f2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '0.4rem 0.85rem', cursor: 'pointer' }}><FiX size={12} /> Remove</button>}
+              <div className="col-12">
+                <Field label={`Photos (${images.length}/8)`} hint="First photo will be the cover image. Up to 8 photos allowed.">
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px,1fr))', gap:'0.6rem', marginBottom:'0.6rem' }}>
+                    {imagePreviews.map((preview, idx) => (
+                      <div key={idx} style={{ position:'relative', borderRadius:10, overflow:'hidden', height:100 }}>
+                        <img src={preview} alt={`Photo ${idx+1}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                        {idx === 0 && (
+                          <div style={{ position:'absolute', top:4, left:4, background:'#2563eb', color:'#fff', fontSize:'0.6rem', fontWeight:800, padding:'0.15rem 0.5rem', borderRadius:20 }}>COVER</div>
+                        )}
+                        <button type="button" onClick={() => removeImage(idx)}
+                          style={{ position:'absolute', top:4, right:4, background:'rgba(0,0,0,0.6)', border:'none', borderRadius:'50%', width:22, height:22, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+                          <FiX size={11} />
+                        </button>
+                      </div>
+                    ))}
+                    {images.length < 8 && (
+                      <label style={{ cursor:'pointer' }}>
+                        <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, height:100, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f8fafc', gap:'0.3rem' }}>
+                          <FiUpload size={20} color="#94a3b8" />
+                          <span style={{ fontSize:'0.72rem', color:'#94a3b8', fontWeight:600 }}>Add Photo</span>
+                        </div>
+                        <input type="file" accept="image/*" multiple onChange={handleImages} style={{ display:'none' }} />
+                      </label>
+                    )}
+                  </div>
                 </Field>
               </div>
               <div className="col-md-6">
