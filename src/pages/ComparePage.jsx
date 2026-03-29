@@ -100,10 +100,10 @@ const ComparePage = () => {
         <div className="row g-3 mb-4">
           {[0,1,2].map(idx=>(
             <div key={idx} className="col-md-4">
-              <div style={{ background:'#fff', borderRadius:16, border:selected[idx]?'2px solid #2563eb':'2px dashed #cbd5e1', overflow:'hidden', boxShadow:'0 2px 12px rgba(15,23,42,0.06)', position:'relative' }}>
+              <div style={{ background:'#fff', borderRadius:16, border:selected[idx]?'2px solid #2563eb':'2px dashed #cbd5e1', boxShadow:'0 2px 12px rgba(15,23,42,0.06)', position:'relative' }}>
                 {selected[idx] ? (
                   <div>
-                    <div style={{ position:'relative', height:160 }}>
+                    <div style={{ position:'relative', height:160, overflow:'hidden' }}>
                       {selected[idx].image
                         ? <img src={`${IMAGE_BASE}${selected[idx].image}`} alt={selected[idx].title} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={e=>e.target.style.display="none"}/>
                         : <div style={{ width:'100%', height:'100%', background:'linear-gradient(135deg,#1e293b,#334155)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'3rem' }}>🏠</div>}
@@ -129,7 +129,7 @@ const ComparePage = () => {
                       <input type="text" placeholder="Search boarding..." value={search[idx]} onChange={e=>handleSearchChange(idx,e.target.value)} onFocus={()=>{const d=[...dropdownOpen];d[idx]=true;setDropdownOpen(d);}}
                         style={{ width:'100%', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'0.6rem 0.9rem', fontSize:'0.875rem', fontFamily:'var(--font-body)', outline:'none', color:'#0f172a' }}/>
                       {dropdownOpen[idx]&&(
-                        <div style={{ position:'absolute', top:'110%', left:0, right:0, background:'#fff', borderRadius:12, border:'1px solid #e2e8f0', boxShadow:'0 8px 32px rgba(15,23,42,0.12)', zIndex:100, overflow:'hidden', maxHeight:240, overflowY:'auto' }}>
+                        <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:12, border:'1px solid #e2e8f0', boxShadow:'0 8px 32px rgba(15,23,42,0.12)', zIndex:100, overflow:'hidden', maxHeight:240, overflowY:'auto' }}>
                           {loading?<div style={{ padding:'1rem', textAlign:'center', color:'#94a3b8', fontSize:'0.85rem' }}>Loading...</div>
                           :getFiltered(idx).length===0?<div style={{ padding:'1rem', textAlign:'center', color:'#94a3b8', fontSize:'0.85rem' }}>No results</div>
                           :getFiltered(idx).map(b=>(
