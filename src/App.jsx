@@ -16,6 +16,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 
+import ComparePage from './pages/ComparePage';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
@@ -40,6 +41,7 @@ function App() {
           <Route path="/register" element={<MainLayout><Register /></MainLayout>} />
           <Route path="/boarding/:id" element={<MainLayout><BoardingDetail /></MainLayout>} />
           <Route path="/map" element={<MainLayout><MapPage /></MainLayout>} />
+          <Route path="/compare" element={<MainLayout><ComparePage /></MainLayout>} />
           <Route path="/forgot-password" element={<MainLayout><ForgotPassword /></MainLayout>} />
           <Route path="/reset-password/:token" element={<MainLayout><ResetPassword /></MainLayout>} />
 

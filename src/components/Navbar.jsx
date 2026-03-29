@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiPlusCircle, FiHeart, FiMap, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser } from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiHeart, FiMap, FiBarChart2, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser } from 'react-icons/fi';
 
 const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
@@ -33,6 +33,7 @@ const Navbar = () => {
 
         <div className="d-none d-md-flex align-items-center gap-1">
           <Link to="/" className={`nav-link ${isActive('/')}`}><FiHome style={{ marginRight: 4 }} />Home</Link>
+          <Link to="/compare" className={`nav-link ${isActive('/compare')}`}><FiBarChart2 style={{marginRight:4}}/>Compare</Link>
           <Link to="/map" className={`nav-link ${isActive('/map')}`}><FiMap style={{ marginRight: 4 }} />Map</Link>
           {isAuth && (
             <>
@@ -88,7 +89,8 @@ const Navbar = () => {
         <div className="container mt-2 d-md-none" style={{ paddingBottom: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
           <div className="d-flex flex-column gap-1">
             <Link to="/" className={`nav-link ${isActive('/')}`} onClick={() => setOpen(false)}><FiHome style={{ marginRight: 6 }} />Home</Link>
-            <Link to="/map" className={`nav-link ${isActive('/map')}`} onClick={() => setOpen(false)}><FiMap style={{ marginRight: 6 }} />Map</Link>
+            <Link to="/compare" className={`nav-link ${isActive('/compare')}`}><FiBarChart2 style={{marginRight:4}}/>Compare</Link>
+          <Link to="/map" className={`nav-link ${isActive('/map')}`} onClick={() => setOpen(false)}><FiMap style={{ marginRight: 6 }} />Map</Link>
             {isAuth ? (
               <>
                 <Link to="/add" className={`nav-link ${isActive('/add')}`} onClick={() => setOpen(false)}><FiPlusCircle style={{ marginRight: 6 }} />Add Boarding</Link>
