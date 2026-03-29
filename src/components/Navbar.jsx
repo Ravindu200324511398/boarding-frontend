@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { FiHome, FiPlusCircle, FiHeart, FiMap, FiBarChart2, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser } from 'react-icons/fi';
 
@@ -7,6 +8,7 @@ const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
 const Navbar = () => {
   const { isAuth, user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -59,7 +61,11 @@ const Navbar = () => {
                   {user?.name?.split(' ')[0]}
                 </button>
               </Link>
-              <button onClick={handleLogout} className="btn-outline-custom" style={{ padding: '0.45rem 1rem', fontSize: '0.875rem' }}>
+              <button onClick={toggleTheme} title="Toggle theme"
+              style={{ background:'transparent', border:'1px solid #e2e8f0', borderRadius:8, padding:'0.4rem 0.65rem', cursor:'pointer', fontSize:'1.1rem', lineHeight:1, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {isDark ? '☀️' : '🌙'}
+            </button>
+            <button onClick={handleLogout} className="btn-outline-custom" style={{ padding: '0.45rem 1rem', fontSize: '0.875rem' }}>
                 <FiLogOut style={{ marginRight: 4 }} />Logout
               </button>
             </>
@@ -71,6 +77,9 @@ const Navbar = () => {
                   <FiUserPlus style={{ marginRight: 4 }} />Register
                 </button>
               </Link>
+              <button onClick={toggleTheme} style={{ background:'transparent', border:'1px solid #e2e8f0', borderRadius:8, padding:'0.4rem 0.7rem', cursor:'pointer', fontSize:'1rem', display:'flex', alignItems:'center', justifyContent:'center', color:'inherit' }} title="Toggle dark mode">
+                {isDark ? '☀️' : '🌙'}
+              </button>
               <Link to="/admin">
                 <button style={{ background: 'transparent', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.4rem 0.8rem', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: 'var(--font-body)' }}>
                   <FiShield size={12} />Admin
