@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 
@@ -10,6 +11,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AddBoarding from './pages/AddBoarding';
+import EditBoarding from './pages/EditBoarding';
 import BoardingDetail from './pages/BoardingDetail';
 import Favorites from './pages/Favorites';
 import MapPage from './pages/MapPage';
@@ -25,10 +27,11 @@ import AdminUserDetail from './pages/AdminUserDetail';
 import AdminBoardings from './pages/AdminBoardings';
 
 const MainLayout = ({ children }) => (
-  <>
+  <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh' }}>
     <Navbar />
-    {children}
-  </>
+    <div style={{ flex: 1 }}>{children}</div>
+    <Footer />
+  </div>
 );
 
 function App() {
@@ -47,6 +50,7 @@ function App() {
           <Route path="/reset-password/:token" element={<MainLayout><ResetPassword /></MainLayout>} />
 
           {/* Protected user routes */}
+          <Route path="/edit/:id" element={<MainLayout><ProtectedRoute><EditBoarding /></ProtectedRoute></MainLayout>} />
           <Route path="/add" element={<MainLayout><ProtectedRoute><AddBoarding /></ProtectedRoute></MainLayout>} />
           <Route path="/favorites" element={<MainLayout><ProtectedRoute><Favorites /></ProtectedRoute></MainLayout>} />
           <Route path="/profile" element={<MainLayout><ProtectedRoute><Profile /></ProtectedRoute></MainLayout>} />

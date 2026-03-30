@@ -358,7 +358,7 @@ const BoardingDetail = () => {
                     )}
 
                     {/* My Rating / Review Form */}
-                    {isAuth ? (
+                    {isAuth && !isOwner ? (
                       <div style={{ marginBottom: '1.5rem' }}>
                         {myRating && !showForm ? (
                           <div style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', borderRadius: 14, padding: '1.1rem 1.3rem', border: '1px solid #86efac' }}>
@@ -474,12 +474,19 @@ const BoardingDetail = () => {
 
             {/* Owner delete */}
             {isOwner && (
-              <button onClick={() => setDeleteListingModal(true)}
+              <div style={{ display:'flex', gap:'0.8rem', flexWrap:'wrap' }}>
+                <Link to={`/edit/${id}`}>
+                  <button style={{ background:'#eff6ff', color:'#2563eb', border:'1.5px solid #bfdbfe', borderRadius:12, padding:'0.7rem 1.4rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', display:'flex', alignItems:'center', gap:'0.5rem', fontFamily:'var(--font-body)' }}>
+                    <FiEdit2 size={15}/> Edit Listing
+                  </button>
+                </Link>
+                <button onClick={() => setDeleteListingModal(true)}
                 style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 12, padding: '0.7rem 1.4rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', transition: 'all 0.2s' }}
                 onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
                 onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}>
                 <FiTrash2 size={15} /> Delete This Listing
               </button>
+              </div>
             )}
           </div>
 
@@ -537,7 +544,7 @@ const BoardingDetail = () => {
                 </div>
 
                 {/* CTA Buttons */}
-                {isAuth ? (
+                {isAuth && !isOwner ? (
                   <button onClick={handleFavorite} disabled={favLoading}
                     style={{ width: '100%', background: isFav ? '#fef2f2' : 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: isFav ? '#dc2626' : '#fff', border: isFav ? '1.5px solid #fecaca' : 'none', borderRadius: 12, padding: '0.8rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', transition: 'all 0.2s', boxShadow: isFav ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' }}>
                     <FiHeart fill={isFav ? '#dc2626' : 'none'} size={16} />
