@@ -20,6 +20,8 @@ import ResetPassword from './pages/ResetPassword';
 import Profile from './pages/Profile';
 
 import ComparePage from './pages/ComparePage';
+import InquiriesPage from './pages/InquiriesPage';
+import MyInquiriesPage from './pages/MyInquiriesPage';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
@@ -52,6 +54,8 @@ function App() {
           {/* Protected user routes */}
           <Route path="/edit/:id" element={<MainLayout><ProtectedRoute><EditBoarding /></ProtectedRoute></MainLayout>} />
           <Route path="/add" element={<MainLayout><ProtectedRoute><AddBoarding /></ProtectedRoute></MainLayout>} />
+          <Route path="/my-inquiries" element={<MainLayout><ProtectedRoute><MyInquiriesPage /></ProtectedRoute></MainLayout>} />
+          <Route path="/inquiries" element={<MainLayout><ProtectedRoute><InquiriesPage /></ProtectedRoute></MainLayout>} />
           <Route path="/favorites" element={<MainLayout><ProtectedRoute><Favorites /></ProtectedRoute></MainLayout>} />
           <Route path="/profile" element={<MainLayout><ProtectedRoute><Profile /></ProtectedRoute></MainLayout>} />
 

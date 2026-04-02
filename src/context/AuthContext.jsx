@@ -24,14 +24,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('bf_user', JSON.stringify(userData));
   };
 
+  // ── updateUser: update user data without changing token ──
   const updateUser = (userData, jwtToken) => {
-    const merged = { ...user, ...userData };
-    setUser(merged);
-    localStorage.setItem('bf_user', JSON.stringify(merged));
-    if (jwtToken) {
-      setToken(jwtToken);
-      localStorage.setItem('bf_token', jwtToken);
-    }
+    const newToken = jwtToken || token;
+    setUser(userData);
+    setToken(newToken);
+    localStorage.setItem('bf_token', newToken);
+    localStorage.setItem('bf_user', JSON.stringify(userData));
   };
 
   const logout = () => {

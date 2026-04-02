@@ -10,6 +10,7 @@ import api from '../api/axios';
 import AvatarUpload from '../components/AvatarUpload';
 
 const IMAGE_BASE = 'http://localhost:5001/uploads/';
+const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
 const Profile = () => {
   const { user, login, updateUser } = useAuth();

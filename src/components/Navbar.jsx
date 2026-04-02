@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { FiHome, FiPlusCircle, FiHeart, FiMap, FiBarChart2, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser } from 'react-icons/fi';
+import { FiHome, FiPlusCircle, FiHeart, FiMap, FiBell, FiMessageSquare, FiBarChart2, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX, FiShield, FiUser } from 'react-icons/fi';
 
 const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
@@ -40,6 +40,12 @@ const Navbar = () => {
           {isAuth && (
             <>
               <Link to="/add" className={`nav-link ${isActive('/add')}`}><FiPlusCircle style={{ marginRight: 4 }} />Add Boarding</Link>
+              <Link to="/inquiries" className={`nav-link ${isActive('/inquiries')}`}>
+                <FiBell style={{marginRight:4}}/>Inquiries
+              </Link>
+              <Link to="/my-inquiries" className={`nav-link ${isActive('/my-inquiries')}`}>
+                <FiMessageSquare style={{marginRight:4}}/>My Requests
+              </Link>
               <Link to="/favorites" className={`nav-link ${isActive('/favorites')}`}><FiHeart style={{ marginRight: 4 }} />Favorites</Link>
             </>
           )}
@@ -103,7 +109,13 @@ const Navbar = () => {
             {isAuth ? (
               <>
                 <Link to="/add" className={`nav-link ${isActive('/add')}`} onClick={() => setOpen(false)}><FiPlusCircle style={{ marginRight: 6 }} />Add Boarding</Link>
-                <Link to="/favorites" className={`nav-link ${isActive('/favorites')}`} onClick={() => setOpen(false)}><FiHeart style={{ marginRight: 6 }} />Favorites</Link>
+                <Link to="/inquiries" className={`nav-link ${isActive('/inquiries')}`}>
+                <FiBell style={{marginRight:4}}/>Inquiries
+              </Link>
+              <Link to="/my-inquiries" className={`nav-link ${isActive('/my-inquiries')}`}>
+                <FiMessageSquare style={{marginRight:4}}/>My Requests
+              </Link>
+              <Link to="/favorites" className={`nav-link ${isActive('/favorites')}`} onClick={() => setOpen(false)}><FiHeart style={{ marginRight: 6 }} />Favorites</Link>
                 <Link to="/profile" className={`nav-link ${isActive('/profile')}`} onClick={() => setOpen(false)}>
                   <NavAvatar size={18} /><span style={{ marginLeft: 6 }}>My Profile</span>
                 </Link>

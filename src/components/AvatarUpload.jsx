@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { FiCamera, FiTrash2, FiUpload, FiX, FiCheck } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import ConfirmModal from './ConfirmModal';
 
 const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
@@ -12,6 +13,7 @@ const AvatarUpload = ({ size = 88, showControls = true }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -57,7 +59,11 @@ const AvatarUpload = ({ size = 88, showControls = true }) => {
   };
 
   const handleRemove = async () => {
-    if (!window.confirm('Remove your profile photo?')) return;
+    setShowConfirm(true);
+  };
+
+  const doRemove = async () => {
+    setShowConfirm(false);
     setRemoving(true); setError(''); setSuccess('');
     try {
       const res = await api.delete('/auth/avatar');
@@ -72,6 +78,17 @@ const AvatarUpload = ({ size = 88, showControls = true }) => {
   const displaySrc = preview || avatarUrl;
 
   return (
+    <>
+    <ConfirmModal
+      isOpen={showConfirm}
+      title="Remove Profile Photo"
+      message="Are you sure you want to remove your profile photo? This cannot be undone."
+      confirmText="Yes, Remove"
+      confirmColor="red"
+      icon="🗑️"
+      onConfirm={doRemove}
+      onCancel={() => setShowConfirm(false)}
+    />
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.7rem' }}>
       {/* Avatar circle */}
       <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -182,6 +199,7 @@ const AvatarUpload = ({ size = 88, showControls = true }) => {
         </div>
       )}
     </div>
+  </>
   );
 };
 
