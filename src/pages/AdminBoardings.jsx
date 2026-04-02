@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiHome, FiTrash2, FiEye, FiSearch, FiMapPin } from 'react-icons/fi';
+import { FiHome, FiTrash2, FiEye, FiSearch, FiMapPin, FiStar } from 'react-icons/fi';
 import api from '../api/axios';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -12,9 +12,10 @@ const AdminBoardings = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [promotingId, setPromotingId] = useState(null);
   const [typeFilter, setTypeFilter] = useState('');
+  const [promoteFilter, setPromoteFilter] = useState('all');
 
-  // Modal state
   const [modal, setModal] = useState({ open: false, id: null, title: '' });
 
   useEffect(() => {
@@ -31,8 +32,10 @@ const AdminBoardings = () => {
       result = result.filter(b => b.title.toLowerCase().includes(q) || b.location.toLowerCase().includes(q) || b.owner?.name?.toLowerCase().includes(q));
     }
     if (typeFilter) result = result.filter(b => b.roomType === typeFilter);
+    if (promoteFilter === 'promoted') result = result.filter(b => b.isPromoted);
+    if (promoteFilter === 'normal') result = result.filter(b => !b.isPromoted);
     setFiltered(result);
-  }, [search, typeFilter, boardings]);
+  }, [search, typeFilter, promoteFilter, boardings]);
 
   const openDeleteModal = (id, title) => setModal({ open: true, id, title });
   const closeModal = () => setModal({ open: false, id: null, title: '' });
@@ -47,11 +50,22 @@ const AdminBoardings = () => {
     finally { setDeletingId(null); }
   };
 
+  const handleTogglePromote = async (id) => {
+    setPromotingId(id);
+    try {
+      const res = await api.patch(`/admin/boardings/${id}/toggle-promote`);
+      setBoardings(prev => prev.map(b => b._id === id ? { ...b, isPromoted: res.data.isPromoted } : b));
+    } catch (err) { alert(err.response?.data?.message || 'Failed to update'); }
+    finally { setPromotingId(null); }
+  };
+
   const typeColors = { Single:'#dbeafe|#1d4ed8', Double:'#d1fae5|#065f46', Triple:'#fef3c7|#92400e', Annex:'#ede9fe|#5b21b6', Other:'#f1f5f9|#475569' };
   const getTypeStyle = (type) => {
     const [bg, color] = (typeColors[type] || '#f1f5f9|#475569').split('|');
     return { background: bg, color };
   };
+
+  const promotedCount = boardings.filter(b => b.isPromoted).length;
 
   return (
     <div>
@@ -72,12 +86,13 @@ const AdminBoardings = () => {
             <FiHome size={22} color="#60a5fa" /> Listings Management
           </h1>
           <p style={{ color:'rgba(255,255,255,0.6)', margin:'0.3rem 0 0', fontSize:'0.95rem' }}>
-            {boardings.length} total boarding listings
+            {boardings.length} total listings · <span style={{ color:'#fbbf24' }}>⭐ {promotedCount} promoted</span>
           </p>
         </div>
       </div>
 
       <div className="container pb-5">
+        {/* Filter Bar */}
         <div style={{ background:'#fff', borderRadius:16, padding:'1.2rem 1.5rem', boxShadow:'0 4px 24px rgba(15,23,42,0.08)', border:'1px solid #e2e8f0', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', flex:1, minWidth:200 }}>
             <FiSearch color="#94a3b8" size={16} />
@@ -90,6 +105,19 @@ const AdminBoardings = () => {
             <option value="">All Types</option>
             {['Single','Double','Triple','Annex','Other'].map(t => <option key={t}>{t}</option>)}
           </select>
+          {/* Promote filter pills */}
+          <div style={{ display:'flex', gap:'0.4rem' }}>
+            {[
+              { key:'all', label:'All' },
+              { key:'promoted', label:'⭐ Promoted' },
+              { key:'normal', label:'Normal' },
+            ].map(f => (
+              <button key={f.key} onClick={() => setPromoteFilter(f.key)}
+                style={{ padding:'0.4rem 0.9rem', borderRadius:50, fontSize:'0.82rem', fontWeight:700, border:'none', cursor:'pointer', fontFamily:'var(--font-body)', background: promoteFilter === f.key ? '#0f172a' : '#f1f5f9', color: promoteFilter === f.key ? '#fff' : '#64748b' }}>
+                {f.label}
+              </button>
+            ))}
+          </div>
           {(search || typeFilter) && (
             <button onClick={() => { setSearch(''); setTypeFilter(''); }}
               style={{ background:'#f1f5f9', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', fontSize:'0.82rem', color:'#64748b', cursor:'pointer', fontWeight:600 }}>
@@ -108,9 +136,17 @@ const AdminBoardings = () => {
               const ts = getTypeStyle(b.roomType);
               return (
                 <div key={b._id} className="col-12">
-                  <div style={{ background:'#fff', borderRadius:14, padding:'1rem 1.2rem', boxShadow:'0 2px 12px rgba(15,23,42,0.06)', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', gap:'1rem', transition:'box-shadow 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow='0 6px 24px rgba(15,23,42,0.12)'}
-                    onMouseLeave={e => e.currentTarget.style.boxShadow='0 2px 12px rgba(15,23,42,0.06)'}>
+                  <div style={{ background:'#fff', borderRadius:14, padding:'1rem 1.2rem', boxShadow: b.isPromoted ? '0 4px 20px rgba(251,191,36,0.2)' : '0 2px 12px rgba(15,23,42,0.06)', border: b.isPromoted ? '1.5px solid #fbbf24' : '1px solid #e2e8f0', display:'flex', alignItems:'center', gap:'1rem', transition:'box-shadow 0.2s', position:'relative' }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = b.isPromoted ? '0 6px 28px rgba(251,191,36,0.3)' : '0 6px 24px rgba(15,23,42,0.12)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = b.isPromoted ? '0 4px 20px rgba(251,191,36,0.2)' : '0 2px 12px rgba(15,23,42,0.06)'}>
+
+                    {/* Promoted badge */}
+                    {b.isPromoted && (
+                      <div style={{ position:'absolute', top:10, right:10, background:'linear-gradient(135deg,#f59e0b,#d97706)', color:'#fff', fontSize:'0.68rem', fontWeight:800, padding:'0.2rem 0.6rem', borderRadius:20, display:'flex', alignItems:'center', gap:'0.3rem' }}>
+                        <FiStar size={10} fill="#fff" /> PROMOTED
+                      </div>
+                    )}
+
                     {imgUrl
                       ? <img src={imgUrl} alt={b.title} style={{ width:80, height:64, objectFit:'cover', borderRadius:10, flexShrink:0 }} onError={e => e.target.style.display='none'} />
                       : <div style={{ width:80, height:64, background:'#e2e8f0', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.8rem', flexShrink:0 }}>🏠</div>}
@@ -136,14 +172,24 @@ const AdminBoardings = () => {
                       )}
                     </div>
 
-                    <div style={{ display:'flex', gap:'0.5rem', flexShrink:0 }}>
+                    <div style={{ display:'flex', gap:'0.5rem', flexShrink:0, alignItems:'center' }}>
+                      {/* Promote toggle */}
+                      <button
+                        onClick={() => handleTogglePromote(b._id)}
+                        disabled={promotingId === b._id}
+                        title={b.isPromoted ? 'Remove promotion' : 'Promote to top'}
+                        style={{ background: b.isPromoted ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#f1f5f9', color: b.isPromoted ? '#fff' : '#64748b', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.82rem', fontWeight:700, transition:'all 0.2s' }}>
+                        {promotingId === b._id
+                          ? <span className="spinner-border spinner-border-sm" style={{ width:'0.8rem', height:'0.8rem' }} />
+                          : <><FiStar size={13} fill={b.isPromoted ? '#fff' : 'none'} />{b.isPromoted ? 'Unpin' : 'Promote'}</>}
+                      </button>
+
                       <Link to={`/boarding/${b._id}`} target="_blank">
                         <button title="View listing" style={{ background:'#dbeafe', color:'#2563eb', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.82rem', fontWeight:600 }}>
                           <FiEye size={14} />View
                         </button>
                       </Link>
                       <button onClick={() => openDeleteModal(b._id, b.title)}
-                        title="Delete listing"
                         style={{ background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.82rem', fontWeight:600 }}>
                         <FiTrash2 size={14} />Delete
                       </button>

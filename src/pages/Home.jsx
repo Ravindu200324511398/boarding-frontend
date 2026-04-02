@@ -5,6 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiMapPin, FiDollarSign, FiFilter, FiHeart, FiEye } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import api from '../api/axios';
 import { StarDisplay } from '../components/StarRating';
 
@@ -12,6 +13,7 @@ import { StarDisplay } from '../components/StarRating';
 const BoardingCard = ({ boarding, onFavorite, favorites }) => {
   const isFav = favorites.includes(boarding._id);
   const { isAuth } = useAuth();
+  const { format } = useCurrency();
 
   const imageUrl = boarding.image
     ? `http://localhost:5001/uploads/${boarding.image}`
@@ -37,7 +39,13 @@ const BoardingCard = ({ boarding, onFavorite, favorites }) => {
           )}
         </div>
 
-        {boarding.avgRating > 0 && <div style={{marginBottom:"0.3rem"}}><StarDisplay rating={boarding.avgRating} size={13} /><span style={{fontSize:"0.75rem",color:"#94a3b8",marginLeft:"0.3rem"}}>({boarding.totalRatings})</span></div>}
+        {boarding.avgRating > 0 && (
+          <div style={{ marginBottom: '0.3rem' }}>
+            <StarDisplay rating={boarding.avgRating} size={13} />
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8', marginLeft: '0.3rem' }}>({boarding.totalRatings})</span>
+          </div>
+        )}
+
         <p className="card-location">
           <FiMapPin size={13} /> {boarding.location}
         </p>
@@ -56,11 +64,11 @@ const BoardingCard = ({ boarding, onFavorite, favorites }) => {
 
         <div className="mt-auto">
           <p className="card-price">
-            LKR {Number(boarding.price).toLocaleString()}
+            {format(boarding.price)}
             <span>/month</span>
           </p>
           <Link to={`/boarding/${boarding._id}`}>
-            <button className="btn-primary-custom w-100 justify-content-center" style={{ fontSize:'0.875rem' }}>
+            <button className="btn-primary-custom w-100 justify-content-center" style={{ fontSize: '0.875rem' }}>
               <FiEye />View Details
             </button>
           </Link>
@@ -88,11 +96,11 @@ const Home = () => {
     setLoading(true);
     try {
       const params = {};
-      if (appliedFilters.search) params.search = appliedFilters.search;
-      if (appliedFilters.location) params.location = appliedFilters.location;
-      if (appliedFilters.minPrice) params.minPrice = appliedFilters.minPrice;
-      if (appliedFilters.maxPrice) params.maxPrice = appliedFilters.maxPrice;
-      if (appliedFilters.roomType) params.roomType = appliedFilters.roomType;
+      if (appliedFilters.search)    params.search    = appliedFilters.search;
+      if (appliedFilters.location)  params.location  = appliedFilters.location;
+      if (appliedFilters.minPrice)  params.minPrice  = appliedFilters.minPrice;
+      if (appliedFilters.maxPrice)  params.maxPrice  = appliedFilters.maxPrice;
+      if (appliedFilters.roomType)  params.roomType  = appliedFilters.roomType;
 
       const res = await api.get('/boardings', { params });
       setBoardings(res.data.boardings);
@@ -154,7 +162,6 @@ const Home = () => {
     const updated = { ...filters, search: heroSearch };
     setFilters(updated);
     fetchBoardings(updated);
-    // Scroll to listings
     document.getElementById('listings')?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -173,7 +180,7 @@ const Home = () => {
               value={heroSearch}
               onChange={(e) => setHeroSearch(e.target.value)}
             />
-            <button type="submit" className="btn-primary-custom" style={{ whiteSpace:'nowrap' }}>
+            <button type="submit" className="btn-primary-custom" style={{ whiteSpace: 'nowrap' }}>
               <FiSearch />Search
             </button>
           </form>
@@ -216,14 +223,14 @@ const Home = () => {
         <div className="filter-bar">
           <div className="row g-2 align-items-end">
             <div className="col-12 col-md-3">
-              <label className="form-label"><FiSearch size={13} style={{marginRight:4}} />Search</label>
+              <label className="form-label"><FiSearch size={13} style={{ marginRight: 4 }} />Search</label>
               <input
                 type="text" name="search" className="form-control"
                 placeholder="Keywords..." value={filters.search} onChange={handleFilterChange}
               />
             </div>
             <div className="col-12 col-md-2">
-              <label className="form-label"><FiMapPin size={13} style={{marginRight:4}} />Location</label>
+              <label className="form-label"><FiMapPin size={13} style={{ marginRight: 4 }} />Location</label>
               <input
                 type="text" name="location" className="form-control"
                 placeholder="e.g. Kandy" value={filters.location} onChange={handleFilterChange}
@@ -256,11 +263,11 @@ const Home = () => {
             </div>
             <div className="col-12 col-md-1 d-flex gap-2">
               <button className="btn-primary-custom w-100 justify-content-center" onClick={handleApplyFilters}
-                style={{ padding:'0.65rem 0.5rem', fontSize:'0.85rem' }}>
+                style={{ padding: '0.65rem 0.5rem', fontSize: '0.85rem' }}>
                 <FiFilter />
               </button>
               <button className="btn-outline-custom" onClick={handleClearFilters}
-                style={{ padding:'0.65rem 0.7rem', fontSize:'0.8rem', whiteSpace:'nowrap' }}>
+                style={{ padding: '0.65rem 0.7rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
                 Clear
               </button>
             </div>
@@ -269,12 +276,12 @@ const Home = () => {
 
         {/* Results Header */}
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 style={{ fontFamily:'var(--font-heading)', fontWeight:700 }}>
+          <h5 style={{ fontFamily: 'var(--font-heading)', fontWeight: 700 }}>
             {loading ? 'Loading...' : `${boardings.length} Boarding${boardings.length !== 1 ? 's' : ''} Found`}
           </h5>
           {isAuth && (
             <Link to="/add">
-              <button className="btn-accent-custom" style={{ fontSize:'0.875rem' }}>
+              <button className="btn-accent-custom" style={{ fontSize: '0.875rem' }}>
                 + Add Boarding
               </button>
             </Link>

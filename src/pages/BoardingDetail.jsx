@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { FiMapPin, FiPhone, FiUser, FiHeart, FiArrowLeft, FiTrash2, FiExternalLink, FiCalendar, FiEdit2, FiX, FiCheck, FiWifi, FiHome, FiShare2 } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import api from '../api/axios';
 import AIReviewAssistant from '../components/AIReviewAssistant';
 import StarRating, { StarDisplay } from '../components/StarRating';
@@ -23,6 +24,8 @@ const BoardingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuth, user } = useAuth();
+  const { format, currency } = useCurrency();
+
   const [boarding, setBoarding] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isFav, setIsFav] = useState(false);
@@ -254,58 +257,6 @@ const BoardingDetail = () => {
       <ConfirmModal isOpen={deleteListingModal} onClose={() => setDeleteListingModal(false)} onConfirm={handleDelete}
         title="Delete This Listing?" message={`"${boarding.title}" will be permanently removed.`}
         confirmText="Yes, Delete" cancelText="Keep It" type="danger" />
-      {/* Inquiry Modal */}
-      {showInquiry && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowInquiry(false); }}>
-          <div style={{ background:'#fff', borderRadius:20, padding:'2rem', width:'100%', maxWidth:480, boxShadow:'0 24px 64px rgba(0,0,0,0.2)' }}>
-            {inquirySent ? (
-              <div style={{ textAlign:'center', padding:'1rem 0' }}>
-                <div style={{ fontSize:'3rem', marginBottom:'0.8rem' }}>✅</div>
-                <h3 style={{ fontFamily:'var(--font-heading)', fontWeight:800, color:'#059669', marginBottom:'0.5rem' }}>Inquiry Sent!</h3>
-                <p style={{ color:'#64748b', marginBottom:'1.5rem', fontSize:'0.9rem' }}>The owner will contact you soon. Check your email for confirmation.</p>
-                <button onClick={() => setShowInquiry(false)}
-                  style={{ background:'linear-gradient(135deg,#2563eb,#1d4ed8)', color:'#fff', border:'none', borderRadius:10, padding:'0.75rem 2rem', fontWeight:700, cursor:'pointer', fontFamily:'var(--font-body)' }}>
-                  Close
-                </button>
-              </div>
-            ) : (
-              <>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1.5rem' }}>
-                  <h3 style={{ fontFamily:'var(--font-heading)', fontWeight:800, color:'#0f172a', margin:0 }}>📅 Request a Visit</h3>
-                  <button onClick={() => setShowInquiry(false)} style={{ background:'#f1f5f9', border:'none', borderRadius:8, width:32, height:32, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
-                </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.8rem' }}>
-                  {[
-                    { key:'name', label:'Your Name *', placeholder:'Full name', type:'text' },
-                    { key:'email', label:'Email Address *', placeholder:'your@email.com', type:'email' },
-                    { key:'phone', label:'Phone Number', placeholder:'+94 77 xxx xxxx', type:'tel' },
-                    { key:'visitDate', label:'Preferred Visit Date', placeholder:'', type:'date' },
-                  ].map(f => (
-                    <div key={f.key}>
-                      <label style={{ fontSize:'0.78rem', fontWeight:700, color:'#374151', display:'block', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>{f.label}</label>
-                      <input type={f.type} placeholder={f.placeholder} value={inquiryForm[f.key]}
-                        onChange={e => setInquiryForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                        style={{ width:'100%', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'0.65rem 0.9rem', fontSize:'0.875rem', fontFamily:'var(--font-body)', outline:'none', color:'#0f172a', boxSizing:'border-box' }}/>
-                    </div>
-                  ))}
-                  <div>
-                    <label style={{ fontSize:'0.78rem', fontWeight:700, color:'#374151', display:'block', marginBottom:'0.3rem', textTransform:'uppercase', letterSpacing:'0.05em' }}>Message *</label>
-                    <textarea rows={3} placeholder="Hi, I am interested in this room and would like to schedule a visit..."
-                      value={inquiryForm.message}
-                      onChange={e => setInquiryForm(prev => ({ ...prev, message: e.target.value }))}
-                      style={{ width:'100%', border:'1.5px solid #e2e8f0', borderRadius:10, padding:'0.65rem 0.9rem', fontSize:'0.875rem', fontFamily:'var(--font-body)', outline:'none', resize:'vertical', color:'#0f172a', boxSizing:'border-box' }}/>
-                  </div>
-                  <button onClick={handleInquirySubmit} disabled={inquiryLoading}
-                    style={{ background:'linear-gradient(135deg,#059669,#047857)', color:'#fff', border:'none', borderRadius:12, padding:'0.85rem', fontWeight:700, cursor:'pointer', fontSize:'0.9rem', fontFamily:'var(--font-body)', opacity: inquiryLoading ? 0.7 : 1 }}>
-                    {inquiryLoading ? 'Sending...' : '📨 Send Inquiry'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       <ConfirmModal isOpen={deleteRatingModal} onClose={() => setDeleteRatingModal(false)} onConfirm={handleDeleteRating}
         loading={deleteRatingLoading} title="Remove Your Review?" message="Your rating and comment will be permanently deleted."
@@ -428,7 +379,6 @@ const BoardingDetail = () => {
                 {activeTab === 'about' && (
                   <div>
                     <p style={{ color: '#475569', lineHeight: 1.85, margin: 0, fontSize: '0.95rem' }}>{boarding.description}</p>
-
                     {boarding.lat && boarding.lng && (
                       <div style={{ marginTop: '1.2rem', background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', borderRadius: 12, padding: '1rem 1.2rem', border: '1px solid #fde68a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
@@ -468,10 +418,8 @@ const BoardingDetail = () => {
                 {/* REVIEWS TAB */}
                 {activeTab === 'reviews' && (
                   <div>
-                    {/* AI Summary */}
                     <AIReviewAssistant reviews={ratings} boarding={boarding} isOwner={isOwner} />
 
-                    {/* Rating Summary */}
                     {totalRatings > 0 && (
                       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem', background: '#f8fafc', borderRadius: 14, padding: '1.2rem', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                         <div style={{ textAlign: 'center', minWidth: 80 }}>
@@ -494,7 +442,6 @@ const BoardingDetail = () => {
                       </div>
                     )}
 
-                    {/* My Rating / Review Form */}
                     {isAuth && !isOwner ? (
                       <div style={{ marginBottom: '1.5rem' }}>
                         {myRating && !showForm ? (
@@ -553,15 +500,6 @@ const BoardingDetail = () => {
                             </div>
                           </div>
                         ) : null}
-
-                        {false && !myRating && !showForm && (
-                          <button onClick={() => setShowForm(true)}
-                            style={{ marginTop: '0.8rem', background: '#f8fafc', color: '#2563eb', border: '1.5px dashed #93c5fd', borderRadius: 12, padding: '0.75rem 1.5rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', width: '100%', fontFamily: 'var(--font-body)', transition: 'all 0.2s' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
-                            ⭐ Write a Review
-                          </button>
-                        )}
                       </div>
                     ) : (
                       <div style={{ background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)', borderRadius: 14, padding: '1.2rem', border: '1px solid #bae6fd', marginBottom: '1.5rem', textAlign: 'center' }}>
@@ -574,7 +512,6 @@ const BoardingDetail = () => {
                       </div>
                     )}
 
-                    {/* Reviews List */}
                     {ratings.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '2.5rem', color: '#94a3b8' }}>
                         <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>💬</div>
@@ -609,8 +546,6 @@ const BoardingDetail = () => {
               </div>
             </div>
 
-            {/* Owner delete */}
-            {/* Inquiry Button for non-owners */}
             {!isOwner && isAvailable && (
               <button onClick={() => { setShowInquiry(true); setInquirySent(false); }}
                 style={{ width:'100%', background:'linear-gradient(135deg,#059669,#047857)', color:'#fff', border:'none', borderRadius:12, padding:'0.85rem', fontWeight:700, cursor:'pointer', fontSize:'0.9rem', fontFamily:'var(--font-body)', marginBottom:'0.8rem', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem' }}>
@@ -625,24 +560,23 @@ const BoardingDetail = () => {
 
             {isOwner && (
               <>
-              {/* Toggle Availability */}
-              <button onClick={handleToggleAvailability} disabled={availLoading}
-                style={{ width:'100%', background: isAvailable ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : 'linear-gradient(135deg,#059669,#047857)', color:'#fff', border:'none', borderRadius:12, padding:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', fontFamily:'var(--font-body)', marginBottom:'0.8rem', opacity: availLoading ? 0.7 : 1 }}>
-                {availLoading ? 'Updating...' : isAvailable ? '🔴 Mark as Occupied' : '✅ Mark as Available'}
-              </button>
-              <div style={{ display:'flex', gap:'0.8rem', flexWrap:'wrap' }}>
-                <Link to={`/edit/${id}`}>
-                  <button style={{ background:'#eff6ff', color:'#2563eb', border:'1.5px solid #bfdbfe', borderRadius:12, padding:'0.7rem 1.4rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', display:'flex', alignItems:'center', gap:'0.5rem', fontFamily:'var(--font-body)' }}>
-                    <FiEdit2 size={15}/> Edit Listing
+                <button onClick={handleToggleAvailability} disabled={availLoading}
+                  style={{ width:'100%', background: isAvailable ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : 'linear-gradient(135deg,#059669,#047857)', color:'#fff', border:'none', borderRadius:12, padding:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', fontFamily:'var(--font-body)', marginBottom:'0.8rem', opacity: availLoading ? 0.7 : 1 }}>
+                  {availLoading ? 'Updating...' : isAvailable ? '🔴 Mark as Occupied' : '✅ Mark as Available'}
+                </button>
+                <div style={{ display:'flex', gap:'0.8rem', flexWrap:'wrap' }}>
+                  <Link to={`/edit/${id}`}>
+                    <button style={{ background:'#eff6ff', color:'#2563eb', border:'1.5px solid #bfdbfe', borderRadius:12, padding:'0.7rem 1.4rem', fontWeight:700, cursor:'pointer', fontSize:'0.875rem', display:'flex', alignItems:'center', gap:'0.5rem', fontFamily:'var(--font-body)' }}>
+                      <FiEdit2 size={15}/> Edit Listing
+                    </button>
+                  </Link>
+                  <button onClick={() => setDeleteListingModal(true)}
+                    style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 12, padding: '0.7rem 1.4rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', transition: 'all 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}>
+                    <FiTrash2 size={15} /> Delete This Listing
                   </button>
-                </Link>
-                <button onClick={() => setDeleteListingModal(true)}
-                style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: 12, padding: '0.7rem 1.4rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
-                onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}>
-                <FiTrash2 size={15} /> Delete This Listing
-              </button>
-              </div>
+                </div>
               </>
             )}
           </div>
@@ -655,10 +589,20 @@ const BoardingDetail = () => {
               <div style={{ background: '#fff', borderRadius: 20, padding: '1.6rem', border: '1px solid #e2e8f0', boxShadow: '0 8px 32px rgba(15,23,42,0.08)' }}>
                 <div style={{ marginBottom: '1rem' }}>
                   <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.3rem' }}>Monthly Rent</div>
+
+                  {/* ── CONVERTED PRICE (big display) ── */}
                   <div style={{ fontFamily: 'var(--font-heading)', fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>
-                    LKR {Number(boarding.price).toLocaleString()}
+                    {format(boarding.price)}
                     <span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400 }}>/mo</span>
                   </div>
+
+                  {/* ── Show original LKR if different currency selected ── */}
+                  {currency.code !== 'LKR' && (
+                    <div style={{ marginTop: '0.3rem', fontSize: '0.78rem', color: '#94a3b8' }}>
+                      ≈ LKR {Number(boarding.price).toLocaleString()} original
+                    </div>
+                  )}
+
                   {totalRatings > 0 && (
                     <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <StarDisplay rating={avgRating} size={14} />
@@ -669,7 +613,6 @@ const BoardingDetail = () => {
 
                 <div style={{ height: 1, background: '#f1f5f9', margin: '1rem 0' }} />
 
-                {/* Contact info */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.2rem' }}>
                   {boarding.contact && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.7rem 0.9rem', background: '#f8fafc', borderRadius: 10, border: '1px solid #f1f5f9' }}>
@@ -700,7 +643,6 @@ const BoardingDetail = () => {
                   </div>
                 </div>
 
-                {/* CTA Buttons */}
                 {isAuth && !isOwner ? (
                   <button onClick={handleFavorite} disabled={favLoading}
                     style={{ width: '100%', background: isFav ? '#fef2f2' : 'linear-gradient(135deg, #2563eb, #1d4ed8)', color: isFav ? '#dc2626' : '#fff', border: isFav ? '1.5px solid #fecaca' : 'none', borderRadius: 12, padding: '0.8rem', fontWeight: 700, cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)', transition: 'all 0.2s', boxShadow: isFav ? 'none' : '0 4px 16px rgba(37,99,235,0.3)' }}>
@@ -725,7 +667,6 @@ const BoardingDetail = () => {
                 )}
               </div>
 
-              {/* Quick Amenities preview */}
               {boarding.amenities?.length > 0 && (
                 <div style={{ background: '#fff', borderRadius: 16, padding: '1.2rem', border: '1px solid #e2e8f0', boxShadow: '0 2px 12px rgba(15,23,42,0.05)' }}>
                   <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.8rem' }}>What's Included</div>
@@ -744,6 +685,7 @@ const BoardingDetail = () => {
                   </div>
                 </div>
               )}
+
             </div>
           </div>
 

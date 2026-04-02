@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 import {
   FiHome, FiMapPin, FiDollarSign, FiUsers, FiPhone,
   FiFileText, FiPlus, FiX, FiUpload, FiSave, FiZap,
@@ -7,7 +10,15 @@ import {
 } from 'react-icons/fi';
 import api from '../api/axios';
 
-// ── 1. CONSTANTS & STATIC STYLES (Moved Outside) ──────────
+// Fix Leaflet default marker icon (broken in React builds)
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// ── 1. CONSTANTS & STATIC STYLES ──────────────────────────
 const AMENITY_OPTIONS = [
   'WiFi', 'Hot Water', 'Air Conditioning', 'Fan', 'Attached Bathroom',
   'Kitchen Access', 'Laundry', 'Parking', 'Furnished', 'Study Desk',
@@ -17,43 +28,34 @@ const AMENITY_OPTIONS = [
 const ROOM_TYPES  = ['Single', 'Double', 'Triple', 'Annex', 'Studio'];
 const GENDER_OPTS = ['Any', 'Male', 'Female'];
 
-const inpBaseStyle = { 
-  border: 'none', 
-  outline: 'none', 
-  flex: 1, 
-  padding: '0.75rem 1rem', 
-  fontSize: '0.95rem', 
-  fontFamily: 'var(--font-body)', 
-  background: 'transparent', 
-  color: '#0f172a', 
-  width: '100%' 
+// Default centre: Sri Lanka
+const SRI_LANKA_CENTER = [7.8731, 80.7718];
+
+const inpBaseStyle = {
+  border: 'none', outline: 'none', flex: 1,
+  padding: '0.75rem 1rem', fontSize: '0.95rem',
+  fontFamily: 'var(--font-body)', background: 'transparent',
+  color: '#0f172a', width: '100%',
 };
 
-// ── 2. HELPER COMPONENTS (Moved Outside to fix focus issue) ──
+// ── 2. HELPER COMPONENTS ──────────────────────────────────
 
 const AIButton = ({ onClick, loading, label, icon, variant = 'primary' }) => {
   const isPrimary = variant === 'primary';
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
+    <button type="button" onClick={onClick} disabled={loading}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
-        background: isPrimary
-          ? 'linear-gradient(135deg, #6d28d9, #2563eb)'
-          : 'rgba(109,40,217,0.08)',
+        background: isPrimary ? 'linear-gradient(135deg, #6d28d9, #2563eb)' : 'rgba(109,40,217,0.08)',
         color: isPrimary ? '#fff' : '#6d28d9',
         border: isPrimary ? 'none' : '1.5px solid rgba(109,40,217,0.25)',
         borderRadius: 10, padding: isPrimary ? '0.65rem 1.2rem' : '0.5rem 1rem',
-        fontFamily: 'var(--font-body)', fontWeight: 700,
-        fontSize: '0.875rem', cursor: loading ? 'not-allowed' : 'pointer',
-        opacity: loading ? 0.7 : 1, transition: 'all 0.18s',
-        whiteSpace: 'nowrap',
+        fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '0.875rem',
+        cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
+        transition: 'all 0.18s', whiteSpace: 'nowrap',
       }}
       onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-    >
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}>
       {loading
         ? <><span className="spinner-border spinner-border-sm" style={{ width: '0.8rem', height: '0.8rem' }} /> Generating...</>
         : <>{icon || <FiZap size={14} />} {label}</>}
@@ -81,8 +83,8 @@ const Field = ({ label, hint, required, children, badge }) => (
 const AIResultCard = ({ title, description, onApply, onRegenerate, loading }) => (
   <div style={{
     background: 'linear-gradient(135deg, rgba(109,40,217,0.04), rgba(37,99,235,0.04))',
-    border: '1.5px solid rgba(109,40,217,0.2)',
-    borderRadius: 14, padding: '1.2rem 1.3rem', marginTop: '0.8rem',
+    border: '1.5px solid rgba(109,40,217,0.2)', borderRadius: 14,
+    padding: '1.2rem 1.3rem', marginTop: '0.8rem',
     position: 'relative', overflow: 'hidden',
   }}>
     <div style={{ position: 'absolute', top: 0, right: 0, width: 60, height: 60, background: 'linear-gradient(135deg,rgba(109,40,217,0.1),transparent)', borderRadius: '0 14px 0 60px' }} />
@@ -124,13 +126,10 @@ const SectionHead = ({ number, title, sub }) => (
 );
 
 const InputWrapper = ({ icon, children, isFocused }) => (
-  <div style={{ 
-    display: 'flex', 
-    alignItems: 'center', 
-    border: `1.5px solid ${isFocused ? '#2563eb' : '#e2e8f0'}`, 
-    borderRadius: 10, 
-    overflow: 'hidden', 
-    transition: 'border-color 0.15s' 
+  <div style={{
+    display: 'flex', alignItems: 'center',
+    border: `1.5px solid ${isFocused ? '#2563eb' : '#e2e8f0'}`,
+    borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.15s',
   }}>
     {icon && (
       <span style={{ padding: '0 0.85rem', color: '#94a3b8', background: '#f8fafc', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #e2e8f0' }}>
@@ -141,36 +140,162 @@ const InputWrapper = ({ icon, children, isFocused }) => (
   </div>
 );
 
-// ── 3. MAIN COMPONENT ────────────────────────────────────
+// ── 3. MAP CLICK HANDLER ──────────────────────────────────
+const MapClickHandler = ({ onLocationSelect }) => {
+  useMapEvents({
+    click(e) {
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
+
+// ── 4. MAP PICKER COMPONENT ───────────────────────────────
+const MapPicker = ({ lat, lng, onChange }) => {
+  const hasPin = lat !== '' && lng !== '';
+  const markerPos = hasPin ? [parseFloat(lat), parseFloat(lng)] : null;
+
+  const handleSelect = useCallback((newLat, newLng) => {
+    onChange(
+      parseFloat(newLat.toFixed(6)),
+      parseFloat(newLng.toFixed(6))
+    );
+  }, [onChange]);
+
+  const handleClear = () => onChange('', '');
+
+  return (
+    <div>
+      {/* Instruction banner */}
+      <div style={{
+        background: hasPin
+          ? 'linear-gradient(135deg, rgba(5,150,105,0.07), rgba(16,185,129,0.04))'
+          : 'linear-gradient(135deg, rgba(37,99,235,0.06), rgba(109,40,217,0.04))',
+        border: `1.5px solid ${hasPin ? 'rgba(5,150,105,0.25)' : 'rgba(37,99,235,0.2)'}`,
+        borderRadius: 12, padding: '0.75rem 1rem',
+        marginBottom: '0.75rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '0.5rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <FiMapPin size={15} color={hasPin ? '#059669' : '#2563eb'} />
+          {hasPin ? (
+            <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 600 }}>
+              📍 Location pinned — <span style={{ fontWeight: 400, color: '#374151' }}>{lat}, {lng}</span>
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.85rem', color: '#2563eb', fontWeight: 600 }}>
+              Click anywhere on the map to drop a pin
+            </span>
+          )}
+        </div>
+        {hasPin && (
+          <button type="button" onClick={handleClear}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '0.3rem 0.75rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            <FiX size={12} /> Clear pin
+          </button>
+        )}
+      </div>
+
+      {/* Map */}
+      <div style={{ borderRadius: 14, overflow: 'hidden', border: '1.5px solid #e2e8f0', height: 340, position: 'relative' }}>
+        <MapContainer
+          center={markerPos || SRI_LANKA_CENTER}
+          zoom={markerPos ? 14 : 7}
+          style={{ height: '100%', width: '100%' }}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <MapClickHandler onLocationSelect={handleSelect} />
+          {markerPos && <Marker position={markerPos} />}
+        </MapContainer>
+
+        {/* Crosshair overlay hint */}
+        {!hasPin && (
+          <div style={{
+            position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(15,23,42,0.75)', color: '#fff',
+            borderRadius: 20, padding: '0.35rem 0.9rem',
+            fontSize: '0.75rem', fontWeight: 600, zIndex: 1000,
+            backdropFilter: 'blur(6px)', pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}>
+            🗺️ Scroll to zoom · Click to pin location
+          </div>
+        )}
+      </div>
+
+      {/* Coordinate display / manual override */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginTop: '0.75rem' }}>
+        {[
+          { key: 'lat', label: 'Latitude', val: lat },
+          { key: 'lng', label: 'Longitude', val: lng },
+        ].map(({ key, label, val }) => (
+          <div key={key} style={{ position: 'relative' }}>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.3rem' }}>
+              {label}
+            </label>
+            <input
+              type="number" step="any"
+              value={val}
+              onChange={e => {
+                const newVal = e.target.value;
+                if (key === 'lat') onChange(newVal, lng);
+                else onChange(lat, newVal);
+              }}
+              placeholder={key === 'lat' ? '7.8731' : '80.7718'}
+              style={{
+                width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8,
+                padding: '0.55rem 0.85rem', fontSize: '0.85rem',
+                fontFamily: 'var(--font-body)', color: '#0f172a',
+                outline: 'none', background: '#f8fafc',
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '0.4rem 0 0' }}>
+        You can also type coordinates directly above if you know the exact location.
+      </p>
+    </div>
+  );
+};
+
+
+// ── 5. MAIN COMPONENT ────────────────────────────────────
 const AddBoarding = () => {
   const navigate = useNavigate();
 
-  // Form state
   const [form, setForm] = useState({
     title: '', description: '', location: '',
     price: '', roomType: 'Single', gender: 'Any', contact: '',
     lat: '', lng: '',
   });
-  const [amenities, setAmenities] = useState([]);
+  const [amenities, setAmenities]       = useState([]);
   const [customAmenity, setCustomAmenity] = useState('');
-  const [images, setImages] = useState([]);
+  const [images, setImages]             = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
 
-  // UI state
-  const [focused, setFocused] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]   = useState('');
-  const [success, setSuccess] = useState('');
+  const [focused, setFocused]           = useState('');
+  const [submitting, setSubmitting]     = useState(false);
+  const [error, setError]               = useState('');
+  const [success, setSuccess]           = useState('');
 
-  // AI state
   const [aiLoading, setAiLoading]       = useState(false);
   const [aiResult, setAiResult]         = useState(null);
   const [aiImproving, setAiImproving]   = useState(false);
   const [aiImproved, setAiImproved]     = useState(null);
   const [aiError, setAiError]           = useState('');
 
-  // helpers
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  // Map pin handler
+  const handleMapChange = useCallback((newLat, newLng) => {
+    setForm(f => ({ ...f, lat: newLat, lng: newLng }));
+  }, []);
 
   const toggleAmenity = (a) =>
     setAmenities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
@@ -203,17 +328,13 @@ const AddBoarding = () => {
 
   const handleGenerate = async () => {
     if (!form.location || !form.price || !form.roomType) {
-      setAiError('Please fill in Location, Price and Room Type before generating.');
-      return;
+      setAiError('Please fill in Location, Price and Room Type before generating.'); return;
     }
     setAiLoading(true); setAiError(''); setAiResult(null);
     try {
       const res = await api.post('/ai/generate-listing', {
-        location:    form.location,
-        price:       form.price,
-        roomType:    form.roomType,
-        amenities,
-        gender:      form.gender,
+        location: form.location, price: form.price,
+        roomType: form.roomType, amenities, gender: form.gender,
         description: form.description,
       });
       setAiResult({ title: res.data.title, description: res.data.description });
@@ -231,16 +352,13 @@ const AddBoarding = () => {
 
   const handleImprove = async () => {
     if (!form.description.trim()) {
-      setAiError('Write something in the description field first, then click Improve.');
-      return;
+      setAiError('Write something in the description field first, then click Improve.'); return;
     }
     setAiImproving(true); setAiError(''); setAiImproved(null);
     try {
       const res = await api.post('/ai/improve-listing', {
         existingDescription: form.description,
-        location:  form.location,
-        roomType:  form.roomType,
-        price:     form.price,
+        location: form.location, roomType: form.roomType, price: form.price,
       });
       setAiImproved({ description: res.data.description });
     } catch (err) {
@@ -264,14 +382,8 @@ const AddBoarding = () => {
       const formData = new FormData();
       Object.entries(form).forEach(([k, v]) => { if (v !== '') formData.append(k, v); });
       amenities.forEach(a => formData.append('amenities', a));
-      if (images.length > 0) {
-        images.forEach(img => formData.append('images', img));
-      }
-
-      await api.post('/boardings', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
+      if (images.length > 0) images.forEach(img => formData.append('images', img));
+      await api.post('/boardings', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setSuccess('Listing created successfully!');
       setTimeout(() => navigate('/'), 1500);
     } catch (err) {
@@ -281,6 +393,7 @@ const AddBoarding = () => {
 
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+      {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #6d28d9 100%)', padding: '2.5rem 0 3.5rem' }}>
         <div className="container" style={{ maxWidth: 820 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.4rem' }}>
@@ -308,6 +421,7 @@ const AddBoarding = () => {
             </div>
           )}
 
+          {/* Section 1 – Basic Details */}
           <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1rem' }}>
             <SectionHead number="1" title="Basic Details" sub="Location, price, and room type" />
             <div className="row g-3">
@@ -365,6 +479,7 @@ const AddBoarding = () => {
             </div>
           </div>
 
+          {/* Section 2 – Amenities */}
           <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1rem' }}>
             <SectionHead number="2" title="Amenities" sub="Select everything included in the rent" />
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
@@ -402,6 +517,7 @@ const AddBoarding = () => {
             )}
           </div>
 
+          {/* Section 3 – Title & Description */}
           <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1rem' }}>
             <SectionHead number="3" title="Title & Description" sub="Write your own or generate with AI" />
             {aiError && (
@@ -417,9 +533,7 @@ const AddBoarding = () => {
                     <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>AI Listing Writer</span>
                     <span style={{ background: 'linear-gradient(135deg,#6d28d9,#2563eb)', color: '#fff', fontSize: '0.62rem', fontWeight: 800, padding: '0.1rem 0.5rem', borderRadius: 20 }}>POWERED BY CLAUDE</span>
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>
-                    Fill in Section 1 first, then click Generate.
-                  </p>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Fill in Section 1 first, then click Generate.</p>
                 </div>
                 <AIButton onClick={handleGenerate} loading={aiLoading} label="Generate listing" icon={<FiZap size={14} />} variant="primary" />
               </div>
@@ -436,14 +550,10 @@ const AddBoarding = () => {
 
             <Field label="Description" required badge="AI can improve this">
               <div style={{ border: `1.5px solid ${focused === 'desc' ? '#2563eb' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden' }}>
-                <textarea
-                  value={form.description}
-                  onChange={e => set('description', e.target.value)}
+                <textarea value={form.description} onChange={e => set('description', e.target.value)}
                   onFocus={() => setFocused('desc')} onBlur={() => setFocused('')}
-                  placeholder="Describe your boarding place..."
-                  rows={5}
-                  style={{ width: '100%', border: 'none', outline: 'none', padding: '0.85rem 1rem', fontSize: '0.9rem', fontFamily: 'var(--font-body)', color: '#0f172a', resize: 'vertical', background: 'transparent' }}
-                />
+                  placeholder="Describe your boarding place..." rows={5}
+                  style={{ width: '100%', border: 'none', outline: 'none', padding: '0.85rem 1rem', fontSize: '0.9rem', fontFamily: 'var(--font-body)', color: '#0f172a', resize: 'vertical', background: 'transparent' }} />
                 <div style={{ borderTop: '1px solid #f1f5f9', padding: '0.6rem 0.85rem', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{form.description.length} characters</span>
                   <AIButton onClick={handleImprove} loading={aiImproving} label="✨ Improve with AI" variant="secondary" />
@@ -453,54 +563,58 @@ const AddBoarding = () => {
             </Field>
           </div>
 
+          {/* Section 4 – Photos & Map */}
           <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1.5rem' }}>
             <SectionHead number="4" title="Photo & Map Location" sub="Optional but recommended" />
-            <div className="row g-3">
-              <div className="col-12">
-                <Field label={`Photos (${images.length}/8)`} hint="First photo will be the cover image. Up to 8 photos allowed.">
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(120px,1fr))', gap:'0.6rem', marginBottom:'0.6rem' }}>
-                    {imagePreviews.map((preview, idx) => (
-                      <div key={idx} style={{ position:'relative', borderRadius:10, overflow:'hidden', height:100 }}>
-                        <img src={preview} alt={`Photo ${idx+1}`} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
-                        {idx === 0 && (
-                          <div style={{ position:'absolute', top:4, left:4, background:'#2563eb', color:'#fff', fontSize:'0.6rem', fontWeight:800, padding:'0.15rem 0.5rem', borderRadius:20 }}>COVER</div>
-                        )}
-                        <button type="button" onClick={() => removeImage(idx)}
-                          style={{ position:'absolute', top:4, right:4, background:'rgba(0,0,0,0.6)', border:'none', borderRadius:'50%', width:22, height:22, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
-                          <FiX size={11} />
-                        </button>
-                      </div>
-                    ))}
-                    {images.length < 8 && (
-                      <label style={{ cursor:'pointer' }}>
-                        <div style={{ border:'2px dashed #e2e8f0', borderRadius:10, height:100, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#f8fafc', gap:'0.3rem' }}>
-                          <FiUpload size={20} color="#94a3b8" />
-                          <span style={{ fontSize:'0.72rem', color:'#94a3b8', fontWeight:600 }}>Add Photo</span>
-                        </div>
-                        <input type="file" accept="image/*" multiple onChange={handleImages} style={{ display:'none' }} />
-                      </label>
+
+            {/* Photos */}
+            <Field label={`Photos (${images.length}/8)`} hint="First photo will be the cover image. Up to 8 photos allowed.">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px,1fr))', gap: '0.6rem', marginBottom: '0.6rem' }}>
+                {imagePreviews.map((preview, idx) => (
+                  <div key={idx} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', height: 100 }}>
+                    <img src={preview} alt={`Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {idx === 0 && (
+                      <div style={{ position: 'absolute', top: 4, left: 4, background: '#2563eb', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 20 }}>COVER</div>
                     )}
+                    <button type="button" onClick={() => removeImage(idx)}
+                      style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+                      <FiX size={11} />
+                    </button>
                   </div>
-                </Field>
+                ))}
+                {images.length < 8 && (
+                  <label style={{ cursor: 'pointer' }}>
+                    <div style={{ border: '2px dashed #e2e8f0', borderRadius: 10, height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: '0.3rem' }}>
+                      <FiUpload size={20} color="#94a3b8" />
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>Add Photo</span>
+                    </div>
+                    <input type="file" accept="image/*" multiple onChange={handleImages} style={{ display: 'none' }} />
+                  </label>
+                )}
               </div>
-              <div className="col-md-6">
-                <Field label="Map Coordinates">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    <InputWrapper isFocused={focused === 'lat'}>
-                      <input name="lat" type="number" step="any" value={form.lat} onChange={e => set('lat', e.target.value)} onFocus={() => setFocused('lat')} onBlur={() => setFocused('')} placeholder="Latitude" style={inpBaseStyle} />
-                    </InputWrapper>
-                    <InputWrapper isFocused={focused === 'lng'}>
-                      <input name="lng" type="number" step="any" value={form.lng} onChange={e => set('lng', e.target.value)} onFocus={() => setFocused('lng')} onBlur={() => setFocused('')} placeholder="Longitude" style={inpBaseStyle} />
-                    </InputWrapper>
-                  </div>
-                </Field>
-              </div>
-            </div>
+            </Field>
+
+            {/* Map Picker */}
+            <Field
+              label="Pin Location on Map"
+              hint="Click on the map to set the exact location of your boarding place."
+            >
+              <MapPicker
+                lat={form.lat}
+                lng={form.lng}
+                onChange={handleMapChange}
+              />
+            </Field>
           </div>
 
+          {/* Submit */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem' }}>
-            <button type="button" onClick={() => navigate(-1)} style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 12, padding: '0.85rem 1.8rem', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-            <button type="submit" disabled={submitting} style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', color: '#fff', border: 'none', borderRadius: 12, padding: '0.85rem 2.2rem', fontWeight: 700, cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}>
+            <button type="button" onClick={() => navigate(-1)}
+              style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 12, padding: '0.85rem 1.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={submitting}
+              style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', color: '#fff', border: 'none', borderRadius: 12, padding: '0.85rem 2.2rem', fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
               {submitting ? 'Publishing...' : <><FiSave size={15} /> Publish Listing</>}
             </button>
           </div>

@@ -5,11 +5,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiHeart, FiMapPin, FiTrash2, FiEye } from 'react-icons/fi';
 import api from '../api/axios';
+import { useCurrency } from '../context/CurrencyContext';
 
 const Favorites = () => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { format, currency } = useCurrency();
 
   useEffect(() => {
     const fetchFavorites = async () => {
@@ -70,8 +72,13 @@ const Favorites = () => {
                       <p className="card-location"><FiMapPin size={13} /> {boarding.location}</p>
                       <div className="mb-2"><span className="badge-room">{boarding.roomType}</span></div>
                       <p className="card-price">
-                        LKR {Number(boarding.price).toLocaleString()}<span>/month</span>
+                        {format(boarding.price)}<span>/month</span>
                       </p>
+                      {currency.code !== 'LKR' && (
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '-8px', marginBottom: '8px' }}>
+                          ≈ LKR {Number(boarding.price).toLocaleString()} original
+                        </p>
+                      )}
                       <div className="d-flex gap-2 mt-auto">
                         <Link to={`/boarding/${boarding._id}`} style={{ flex:1 }}>
                           <button className="btn-primary-custom w-100 justify-content-center" style={{ fontSize:'0.85rem' }}>
