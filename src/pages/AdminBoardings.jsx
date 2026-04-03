@@ -1,10 +1,118 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FiHome, FiTrash2, FiEye, FiSearch, FiMapPin, FiStar } from 'react-icons/fi';
 import api from '../api/axios';
 import ConfirmModal from '../components/ConfirmModal';
 
 const IMAGE_BASE = 'http://localhost:5001/uploads/';
+
+const ParticleCanvas = () => {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animId;
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+    resize();
+    window.addEventListener('resize', resize);
+    const colors = ['#0ea5e9', '#06b6d4', '#00d4aa', '#2de2e6', '#0891b2'];
+    const particles = Array.from({ length: 30 }, () => ({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 0.5, color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 0.4, vy: -Math.random() * 0.5 - 0.2,
+      alpha: Math.random() * 0.5 + 0.2,
+    }));
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + Math.round(p.alpha * 255).toString(16).padStart(2, '0');
+        ctx.shadowColor = p.color; ctx.shadowBlur = 8; ctx.fill();
+        p.x += p.vx; p.y += p.vy;
+        if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+      });
+      animId = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
+  }, []);
+  return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />;
+};
+
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%      { transform: translate(30px,-40px) scale(1.06); }
+    66%      { transform: translate(-20px,25px) scale(0.96); }
+  }
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .ab-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    display: flex; align-items: center; gap: 1rem;
+    transition: all 0.25s ease;
+    position: relative;
+    animation: fadeUp 0.4s ease both;
+  }
+  .ab-card:hover {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(0,212,170,0.3);
+    box-shadow: 0 4px 24px rgba(0,212,170,0.1);
+    transform: translateY(-1px);
+  }
+  .ab-card.promoted {
+    border-color: rgba(251,191,36,0.4);
+    box-shadow: 0 4px 20px rgba(251,191,36,0.12);
+  }
+  .filter-bar {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+  .filter-input {
+    border: none; outline: none; flex: 1;
+    font-size: 0.9rem; background: transparent;
+    color: rgba(220,233,255,0.9);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  .filter-select {
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 0.5rem 0.8rem;
+    font-size: 0.875rem; color: rgba(220,233,255,0.8);
+    background: rgba(255,255,255,0.06); outline: none;
+  }
+  .pill-btn {
+    padding: 0.4rem 1rem; border-radius: 50px; font-size: 0.82rem;
+    font-weight: 700; border: none; cursor: pointer; transition: all 0.2s;
+  }
+  .pill-btn.active { background: linear-gradient(135deg,#00d4aa,#0ea5e9); color: #fff; }
+  .pill-btn.inactive { background: rgba(255,255,255,0.07); color: rgba(220,233,255,0.5); }
+  .action-btn {
+    border: none; border-radius: 8px; padding: 0.45rem 0.9rem;
+    cursor: pointer; display: flex; align-items: center; gap: 0.4rem;
+    font-size: 0.82rem; font-weight: 700; transition: all 0.2s;
+  }
+  .btn-promote { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+  .btn-promote.active { background: linear-gradient(135deg,#f59e0b,#d97706); color: #fff; border-color: transparent; }
+  .btn-view { background: rgba(14,165,233,0.12); color: #38bdf8; border: 1px solid rgba(14,165,233,0.25); }
+  .btn-delete { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+  .amenity-tag {
+    background: rgba(0,212,170,0.1); color: #00d4aa;
+    padding: 0.12rem 0.55rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+  }
+  .type-badge { padding: 0.15rem 0.65rem; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+`;
 
 const AdminBoardings = () => {
   const [boardings, setBoardings] = useState([]);
@@ -15,7 +123,6 @@ const AdminBoardings = () => {
   const [promotingId, setPromotingId] = useState(null);
   const [typeFilter, setTypeFilter] = useState('');
   const [promoteFilter, setPromoteFilter] = useState('all');
-
   const [modal, setModal] = useState({ open: false, id: null, title: '' });
 
   useEffect(() => {
@@ -59,138 +166,83 @@ const AdminBoardings = () => {
     finally { setPromotingId(null); }
   };
 
-  const typeColors = { Single:'#dbeafe|#1d4ed8', Double:'#d1fae5|#065f46', Triple:'#fef3c7|#92400e', Annex:'#ede9fe|#5b21b6', Other:'#f1f5f9|#475569' };
-  const getTypeStyle = (type) => {
-    const [bg, color] = (typeColors[type] || '#f1f5f9|#475569').split('|');
-    return { background: bg, color };
+  const typeColorMap = {
+    Single: ['rgba(59,130,246,0.15)', '#60a5fa'],
+    Double: ['rgba(16,185,129,0.15)', '#34d399'],
+    Triple: ['rgba(251,191,36,0.15)', '#fbbf24'],
+    Annex: ['rgba(167,139,250,0.15)', '#a78bfa'],
+    Other: ['rgba(148,163,184,0.15)', '#94a3b8'],
   };
 
-  const promotedCount = boardings.filter(b => b.isPromoted).length;
-
   return (
-    <div>
+    <div style={{ minHeight: '100vh', background: '#060f2a', position: 'relative', overflow: 'hidden' }}>
+      <style>{CSS}</style>
+
+      {/* Orbs Background */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', borderRadius: '50%', width: 600, height: 600, background: 'radial-gradient(circle, #0ea5e930, transparent 70%)', filter: 'blur(70px)', top: '-200px', left: '-150px', animation: 'orbFloat 14s infinite' }} />
+      </div>
+
       <ConfirmModal
-        isOpen={modal.open}
-        onClose={closeModal}
+        isOpen={modal.open} 
+        onCancel={closeModal} // Fix: Matches the "onCancel" prop in your modal file
         onConfirm={handleDelete}
-        loading={deletingId === modal.id}
+        confirmText={deletingId ? "Deleting..." : "Yes, Delete"}
+        confirmColor="red"
+        icon={<FiTrash2 color="#ef4444" />}
         title="Delete Listing?"
-        message={`"${modal.title}" will be permanently removed. This cannot be undone.`}
-        confirmText="Yes, Delete"
-        cancelText="Keep It"
+        message={`"${modal.title}" will be permanently removed.`}
       />
 
-      <div style={{ background:'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', padding:'2.5rem 0', marginBottom:'2rem' }}>
+      <div style={{ position: 'relative', zIndex: 2, padding: '2.5rem 0 2rem' }}>
+        <ParticleCanvas />
         <div className="container">
-          <h1 style={{ fontFamily:'var(--font-heading)', fontSize:'1.8rem', fontWeight:800, color:'#fff', margin:0, display:'flex', alignItems:'center', gap:'0.8rem' }}>
-            <FiHome size={22} color="#60a5fa" /> Listings Management
+          <h1 style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontSize: '2rem', fontWeight: 800, color: '#dce9ff', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <FiHome size={22} color="#0ea5e9" /> Listings Management
           </h1>
-          <p style={{ color:'rgba(255,255,255,0.6)', margin:'0.3rem 0 0', fontSize:'0.95rem' }}>
-            {boardings.length} total listings · <span style={{ color:'#fbbf24' }}>⭐ {promotedCount} promoted</span>
-          </p>
         </div>
       </div>
 
-      <div className="container pb-5">
-        {/* Filter Bar */}
-        <div style={{ background:'#fff', borderRadius:16, padding:'1.2rem 1.5rem', boxShadow:'0 4px 24px rgba(15,23,42,0.08)', border:'1px solid #e2e8f0', marginBottom:'1.5rem', display:'flex', alignItems:'center', gap:'1rem', flexWrap:'wrap' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', flex:1, minWidth:200 }}>
-            <FiSearch color="#94a3b8" size={16} />
-            <input type="text" placeholder="Search title, location, owner..." value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{ border:'none', outline:'none', flex:1, fontSize:'0.9rem', fontFamily:'var(--font-body)', color:'#0f172a', background:'transparent' }} />
+      <div className="container pb-5" style={{ position: 'relative', zIndex: 2 }}>
+        <div className="filter-bar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1, minWidth: 200, background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: '0.5rem 1rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <FiSearch color="rgba(0,212,170,0.7)" size={16} />
+            <input type="text" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="filter-input" />
           </div>
-          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-            style={{ border:'1.5px solid #e2e8f0', borderRadius:10, padding:'0.5rem 0.8rem', fontSize:'0.875rem', fontFamily:'var(--font-body)', color:'#0f172a', outline:'none' }}>
+          <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="filter-select">
             <option value="">All Types</option>
-            {['Single','Double','Triple','Annex','Other'].map(t => <option key={t}>{t}</option>)}
+            {['Single', 'Double', 'Triple', 'Annex', 'Other'].map(t => <option key={t}>{t}</option>)}
           </select>
-          {/* Promote filter pills */}
-          <div style={{ display:'flex', gap:'0.4rem' }}>
-            {[
-              { key:'all', label:'All' },
-              { key:'promoted', label:'⭐ Promoted' },
-              { key:'normal', label:'Normal' },
-            ].map(f => (
-              <button key={f.key} onClick={() => setPromoteFilter(f.key)}
-                style={{ padding:'0.4rem 0.9rem', borderRadius:50, fontSize:'0.82rem', fontWeight:700, border:'none', cursor:'pointer', fontFamily:'var(--font-body)', background: promoteFilter === f.key ? '#0f172a' : '#f1f5f9', color: promoteFilter === f.key ? '#fff' : '#64748b' }}>
-                {f.label}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: '0.4rem' }}>
+            <button onClick={() => setPromoteFilter('all')} className={`pill-btn ${promoteFilter === 'all' ? 'active' : 'inactive'}`}>All</button>
+            <button onClick={() => setPromoteFilter('promoted')} className={`pill-btn ${promoteFilter === 'promoted' ? 'active' : 'inactive'}`}>⭐ Promoted</button>
           </div>
-          {(search || typeFilter) && (
-            <button onClick={() => { setSearch(''); setTypeFilter(''); }}
-              style={{ background:'#f1f5f9', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', fontSize:'0.82rem', color:'#64748b', cursor:'pointer', fontWeight:600 }}>
-              Clear
-            </button>
-          )}
-          <span style={{ fontSize:'0.82rem', color:'#94a3b8', whiteSpace:'nowrap' }}>{filtered.length} result{filtered.length !== 1 ? 's' : ''}</span>
         </div>
 
         {loading ? (
-          <div className="spinner-container"><div className="spinner-border text-primary" /></div>
+          <div style={{ textAlign: 'center', padding: '4rem', color: '#00d4aa' }}>Loading...</div>
         ) : (
           <div className="row g-3">
-            {filtered.map(b => {
-              const imgUrl = b.image ? `${IMAGE_BASE}${b.image}` : null;
-              const ts = getTypeStyle(b.roomType);
+            {filtered.map((b) => {
+              const [bgColor, textColor] = typeColorMap[b.roomType] || typeColorMap.Other;
               return (
                 <div key={b._id} className="col-12">
-                  <div style={{ background:'#fff', borderRadius:14, padding:'1rem 1.2rem', boxShadow: b.isPromoted ? '0 4px 20px rgba(251,191,36,0.2)' : '0 2px 12px rgba(15,23,42,0.06)', border: b.isPromoted ? '1.5px solid #fbbf24' : '1px solid #e2e8f0', display:'flex', alignItems:'center', gap:'1rem', transition:'box-shadow 0.2s', position:'relative' }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow = b.isPromoted ? '0 6px 28px rgba(251,191,36,0.3)' : '0 6px 24px rgba(15,23,42,0.12)'}
-                    onMouseLeave={e => e.currentTarget.style.boxShadow = b.isPromoted ? '0 4px 20px rgba(251,191,36,0.2)' : '0 2px 12px rgba(15,23,42,0.06)'}>
-
-                    {/* Promoted badge */}
-                    {b.isPromoted && (
-                      <div style={{ position:'absolute', top:10, right:10, background:'linear-gradient(135deg,#f59e0b,#d97706)', color:'#fff', fontSize:'0.68rem', fontWeight:800, padding:'0.2rem 0.6rem', borderRadius:20, display:'flex', alignItems:'center', gap:'0.3rem' }}>
-                        <FiStar size={10} fill="#fff" /> PROMOTED
+                  <div className={`ab-card ${b.isPromoted ? 'promoted' : ''}`}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <span style={{ fontWeight: 700, color: '#dce9ff' }}>{b.title}</span>
+                        <span className="type-badge" style={{ background: bgColor, color: textColor }}>{b.roomType}</span>
                       </div>
-                    )}
-
-                    {imgUrl
-                      ? <img src={imgUrl} alt={b.title} style={{ width:80, height:64, objectFit:'cover', borderRadius:10, flexShrink:0 }} onError={e => e.target.style.display='none'} />
-                      : <div style={{ width:80, height:64, background:'#e2e8f0', borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.8rem', flexShrink:0 }}>🏠</div>}
-
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:'0.6rem', marginBottom:'0.3rem', flexWrap:'wrap' }}>
-                        <span style={{ fontWeight:700, fontSize:'0.95rem', color:'#0f172a' }}>{b.title}</span>
-                        <span style={{ ...ts, padding:'0.15rem 0.6rem', borderRadius:20, fontSize:'0.72rem', fontWeight:700 }}>{b.roomType}</span>
-                      </div>
-                      <div style={{ display:'flex', alignItems:'center', gap:'1.2rem', flexWrap:'wrap' }}>
-                        <span style={{ fontSize:'0.8rem', color:'#64748b', display:'flex', alignItems:'center', gap:'0.3rem' }}><FiMapPin size={11} />{b.location}</span>
-                        <span style={{ fontSize:'0.875rem', fontWeight:700, color:'#2563eb' }}>LKR {b.price.toLocaleString()}/mo</span>
-                        <span style={{ fontSize:'0.78rem', color:'#94a3b8' }}>by {b.owner?.name || 'Unknown'}</span>
-                        <span style={{ fontSize:'0.75rem', color:'#cbd5e1' }}>{new Date(b.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      {b.amenities?.length > 0 && (
-                        <div style={{ display:'flex', gap:'0.3rem', marginTop:'0.4rem', flexWrap:'wrap' }}>
-                          {b.amenities.slice(0,4).map((a,i) => (
-                            <span key={i} style={{ background:'#f0fdf4', color:'#059669', padding:'0.1rem 0.5rem', borderRadius:20, fontSize:'0.7rem', fontWeight:600 }}>{a}</span>
-                          ))}
-                          {b.amenities.length > 4 && <span style={{ background:'#f1f5f9', color:'#94a3b8', padding:'0.1rem 0.5rem', borderRadius:20, fontSize:'0.7rem' }}>+{b.amenities.length-4}</span>}
-                        </div>
-                      )}
+                      <div style={{ fontSize: '0.8rem', color: 'rgba(220,233,255,0.5)' }}>{b.location}</div>
                     </div>
-
-                    <div style={{ display:'flex', gap:'0.5rem', flexShrink:0, alignItems:'center' }}>
-                      {/* Promote toggle */}
-                      <button
-                        onClick={() => handleTogglePromote(b._id)}
-                        disabled={promotingId === b._id}
-                        title={b.isPromoted ? 'Remove promotion' : 'Promote to top'}
-                        style={{ background: b.isPromoted ? 'linear-gradient(135deg,#f59e0b,#d97706)' : '#f1f5f9', color: b.isPromoted ? '#fff' : '#64748b', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.82rem', fontWeight:700, transition:'all 0.2s' }}>
-                        {promotingId === b._id
-                          ? <span className="spinner-border spinner-border-sm" style={{ width:'0.8rem', height:'0.8rem' }} />
-                          : <><FiStar size={13} fill={b.isPromoted ? '#fff' : 'none'} />{b.isPromoted ? 'Unpin' : 'Promote'}</>}
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button onClick={() => handleTogglePromote(b._id)} disabled={promotingId === b._id} className={`action-btn btn-promote ${b.isPromoted ? 'active' : ''}`}>
+                         {promotingId === b._id ? '...' : <><FiStar size={13} fill={b.isPromoted ? '#fff' : 'none'} /> {b.isPromoted ? 'Unpin' : 'Promote'}</>}
                       </button>
-
                       <Link to={`/boarding/${b._id}`} target="_blank">
-                        <button title="View listing" style={{ background:'#dbeafe', color:'#2563eb', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.82rem', fontWeight:600 }}>
-                          <FiEye size={14} />View
-                        </button>
+                        <button className="action-btn btn-view"><FiEye size={14} />View</button>
                       </Link>
-                      <button onClick={() => openDeleteModal(b._id, b.title)}
-                        style={{ background:'#fef2f2', color:'#dc2626', border:'none', borderRadius:8, padding:'0.5rem 0.9rem', cursor:'pointer', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.82rem', fontWeight:600 }}>
+                      <button onClick={() => openDeleteModal(b._id, b.title)} className="action-btn btn-delete">
                         <FiTrash2 size={14} />Delete
                       </button>
                     </div>
@@ -198,14 +250,6 @@ const AdminBoardings = () => {
                 </div>
               );
             })}
-            {filtered.length === 0 && (
-              <div className="col-12">
-                <div style={{ textAlign:'center', padding:'4rem', color:'#94a3b8', background:'#fff', borderRadius:16, border:'1px solid #e2e8f0' }}>
-                  <div style={{ fontSize:'3rem', marginBottom:'0.5rem' }}>🏠</div>
-                  <p>No listings found.</p>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>
