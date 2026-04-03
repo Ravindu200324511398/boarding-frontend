@@ -1,23 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiHome, FiMessageSquare } from "react-icons/fi";
+import { FiArrowLeft, FiCalendar, FiClock, FiMapPin, FiHome, FiMessageSquare, FiUser, FiTrash2, FiExternalLink, FiMail, FiCheckCircle } from "react-icons/fi";
 import api from "../api/axios";
 
 const IMAGE_BASE = "http://localhost:5001/uploads/";
 
-const statusConfig = {
-  pending:  { label:"Pending",   bg:"#fef3c7", color:"#d97706", border:"#fde68a", icon:"⏳", desc:"Your request is waiting for the owner to review." },
-  seen:     { label:"Seen",      bg:"#eff6ff", color:"#2563eb", border:"#bfdbfe", icon:"👁",  desc:"The owner has seen your request." },
-  accepted: { label:"Accepted",  bg:"#f0fdf4", color:"#059669", border:"#bbf7d0", icon:"✅", desc:"Great news! The owner accepted your visit request." },
-  rejected: { label:"Rejected",  bg:"#fef2f2", color:"#dc2626", border:"#fecaca", icon:"❌", desc:"The owner is unable to accommodate your visit." },
-};
-
-const roomTypeColors = {
-  Single:{ bg:"#dbeafe", color:"#1d4ed8" },
-  Double:{ bg:"#d1fae5", color:"#065f46" },
-  Triple:{ bg:"#fef3c7", color:"#92400e" },
-  Annex:{ bg:"#ede9fe", color:"#5b21b6" },
-  Other:{ bg:"#f1f5f9", color:"#475569" },
+const statusTheme = {
+  pending:  { label: "Pending",   color: "#b45309", bg: "#fffbeb", icon: <FiClock /> },
+  seen:     { label: "Reviewed",  color: "#0d9488", bg: "#f0fdfa", icon: <FiCheckCircle /> },
+  accepted: { label: "Accepted",  color: "#059669", bg: "#f0fdf4", icon: <FiHome /> },
+  rejected: { label: "Declined",  color: "#dc2626", bg: "#fef2f2", icon: <FiTrash2 /> },
 };
 
 const MyInquiriesPage = () => {
@@ -25,7 +17,6 @@ const MyInquiriesPage = () => {
   const [inquiries, setInquiries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
-  const [error, setError] = useState("");
   const [clearModal, setClearModal] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [deleteModal, setDeleteModal] = useState(null);
@@ -33,18 +24,9 @@ const MyInquiriesPage = () => {
   useEffect(() => {
     api.get("/inquiries/student/mine")
       .then(res => setInquiries(res.data.inquiries || []))
-      .catch(() => setError("Could not load your inquiries."))
+      .catch(() => console.error("Could not load inquiries"))
       .finally(() => setLoading(false));
   }, []);
-
-  const filtered = filter === "all" ? inquiries : inquiries.filter(i => i.status === filter);
-  const counts = {
-    all: inquiries.length,
-    pending: inquiries.filter(i => i.status === "pending").length,
-    seen: inquiries.filter(i => i.status === "seen").length,
-    accepted: inquiries.filter(i => i.status === "accepted").length,
-    rejected: inquiries.filter(i => i.status === "rejected").length,
-  };
 
   const handleDeleteOne = async (id) => {
     try {
@@ -65,246 +47,165 @@ const MyInquiriesPage = () => {
     finally { setClearing(false); }
   };
 
-  if (loading) return <div className="spinner-container"><div className="spinner-border text-primary"/></div>;
+  const filtered = filter === "all" ? inquiries : inquiries.filter(i => i.status === filter);
+  const counts = {
+    all: inquiries.length,
+    pending: inquiries.filter(i => i.status === "pending").length,
+    accepted: inquiries.filter(i => i.status === "accepted").length,
+    rejected: inquiries.filter(i => i.status === "rejected").length,
+  };
+
+  if (loading) return (
+    <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'100vh', background: '#fff' }}>
+       <div className="spinner-border text-success" style={{ width: '3rem', height: '3rem' }}></div>
+    </div>
+  );
 
   return (
-    <div style={{ background:"#f8fafc", minHeight:"100vh" }}>
-      <style>{`@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}.miq-card{animation:fadeUp 0.3s ease forwards}`}</style>
+    <div style={{ background: "#f8fafc", minHeight: "100vh" }}>
+      <style>{`
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .modern-card { animation: slideUp 0.4s ease-out forwards; transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .modern-card:hover { transform: translateY(-5px); box-shadow: 0 15px 35px rgba(0,0,0,0.08); }
+        .filter-btn:hover { background: #f0fdf4 !important; color: #10b981 !important; }
+      `}</style>
 
-      {/* Header */}
-      <div style={{ background:"linear-gradient(135deg,#1e293b 0%,#1d4ed8 100%)", padding:"2.5rem 0 3.5rem" }}>
-        <div className="container" style={{ maxWidth:860 }}>
-          <button onClick={() => navigate(-1)}
-            style={{ background:"rgba(255,255,255,0.15)", border:"1px solid rgba(255,255,255,0.25)", color:"#fff", borderRadius:10, padding:"0.45rem 1rem", cursor:"pointer", display:"flex", alignItems:"center", gap:"0.4rem", fontSize:"0.875rem", fontWeight:600, fontFamily:"var(--font-body)", marginBottom:"1rem" }}>
-            <FiArrowLeft size={14}/> Back
+      {/* Header - Using the Emerald Brand Gradient */}
+      <div style={{ background: "linear-gradient(135deg, #0f172a 0%, #10b981 100%)", padding: "4rem 0 6.5rem" }}>
+        <div className="container" style={{ maxWidth: 950 }}>
+          <button onClick={() => navigate(-1)} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 12, padding: "0.6rem 1.2rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.9rem", fontWeight: 600, marginBottom: "2rem", transition: '0.2s' }}>
+            <FiArrowLeft size={18}/> Back
           </button>
-          <div style={{ display:"flex", alignItems:"center", gap:"1rem" }}>
-            <div style={{ width:52, height:52, borderRadius:14, background:"rgba(255,255,255,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.6rem" }}>📬</div>
-            <div>
-              <h1 style={{ fontFamily:"var(--font-heading)", fontSize:"2rem", fontWeight:800, color:"#fff", margin:0 }}>My Inquiries</h1>
-              <p style={{ color:"rgba(255,255,255,0.65)", margin:0, fontSize:"0.9rem" }}>Track your visit requests and responses from owners</p>
-            </div>
-          </div>
-
-          {/* Stats row */}
-          <div style={{ display:"flex", gap:"0.8rem", marginTop:"1.5rem", flexWrap:"wrap" }}>
-            {[
-              { label:"Total Sent", value:counts.all, color:"#fff" },
-              { label:"Accepted", value:counts.accepted, color:"#6ee7b7" },
-              { label:"Pending", value:counts.pending, color:"#fcd34d" },
-              { label:"Rejected", value:counts.rejected, color:"#fca5a5" },
-            ].map(s => (
-              <div key={s.label} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:12, padding:"0.6rem 1.2rem", textAlign:"center" }}>
-                <div style={{ fontFamily:"var(--font-heading)", fontSize:"1.4rem", fontWeight:800, color:s.color }}>{s.value}</div>
-                <div style={{ fontSize:"0.72rem", color:"rgba(255,255,255,0.6)", fontWeight:600 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+          <h1 style={{ fontFamily: "Georgia, serif", fontSize: "2.6rem", fontWeight: 800, color: "#fff", margin: 0 }}>My Visit Requests</h1>
+          <p style={{ color: "rgba(255,255,255,0.85)", fontSize: "1.15rem", marginTop: "10px" }}>Track your visit requests and owner responses</p>
         </div>
       </div>
 
-      <div className="container" style={{ maxWidth:860, marginTop:"-2rem", paddingBottom:"3rem" }}>
-
-        {/* Filter tabs + Clear */}
-        <div style={{ display:"flex", gap:"0.8rem", alignItems:"center", marginBottom:"1.5rem" }}>
-        <div style={{ background:"#fff", borderRadius:16, padding:"0.5rem", display:"flex", gap:"0.3rem", flex:1, boxShadow:"0 4px 24px rgba(15,23,42,0.08)", flexWrap:"wrap" }}>
-          {Object.entries(counts).map(([key, count]) => {
-            const sc = key !== "all" ? statusConfig[key] : null;
-            return (
-              <button key={key} onClick={() => setFilter(key)}
-                style={{ flex:1, minWidth:80, padding:"0.6rem 0.5rem", borderRadius:10, border:"none", background: filter===key ? "linear-gradient(135deg,#2563eb,#1d4ed8)" : "transparent", color: filter===key ? "#fff" : "#64748b", fontWeight:700, cursor:"pointer", fontSize:"0.82rem", fontFamily:"var(--font-body)", display:"flex", alignItems:"center", justifyContent:"center", gap:"0.4rem", transition:"all 0.15s" }}>
-                {sc && <span>{sc.icon}</span>}
-                {key.charAt(0).toUpperCase()+key.slice(1)}
-                <span style={{ background: filter===key ? "rgba(255,255,255,0.25)" : "#f1f5f9", color: filter===key ? "#fff" : "#64748b", borderRadius:20, padding:"0.1rem 0.45rem", fontSize:"0.72rem", fontWeight:800 }}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
-        {filtered.length > 0 && (
-          <button onClick={() => setClearModal(true)}
-            style={{ background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:12, padding:"0.6rem 1.1rem", fontWeight:700, cursor:"pointer", fontSize:"0.82rem", fontFamily:"var(--font-body)", whiteSpace:"nowrap", display:"flex", alignItems:"center", gap:"0.4rem", flexShrink:0 }}>
-            🗑️ Clear {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase()+filter.slice(1)}
-          </button>
-        )}
+      <div className="container" style={{ maxWidth: 950, marginTop: "-3.5rem", paddingBottom: "6rem" }}>
+        
+        {/* Modern Emerald Filter Bar */}
+        <div style={{ background: "#fff", borderRadius: 24, padding: "8px", display: "flex", gap: "8px", boxShadow: "0 12px 40px rgba(0,0,0,0.08)", marginBottom: "2.5rem" }}>
+          {['all', 'pending', 'accepted', 'rejected'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={filter !== f ? "filter-btn" : ""}
+              style={{ 
+                flex: 1, padding: "0.9rem 1rem", borderRadius: 18, border: "none", 
+                background: filter === f ? "#10b981" : "transparent", 
+                color: filter === f ? "#fff" : "#64748b", 
+                fontWeight: 800, cursor: "pointer", fontSize: "0.88rem", transition: '0.3s' 
+              }}>
+              {f.charAt(0).toUpperCase() + f.slice(1)} <span style={{ marginLeft: 6, opacity: 0.7 }}>({counts[f] || inquiries.length})</span>
+            </button>
+          ))}
         </div>
 
-        {error && (
-          <div style={{ background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:12, padding:"1rem", marginBottom:"1rem", textAlign:"center" }}>{error}</div>
-        )}
-
-        {filtered.length === 0 ? (
-          <div style={{ background:"#fff", borderRadius:20, padding:"4rem 2rem", textAlign:"center", boxShadow:"0 4px 24px rgba(15,23,42,0.08)" }}>
-            <div style={{ fontSize:"3.5rem", marginBottom:"1rem" }}>📭</div>
-            <h3 style={{ fontFamily:"var(--font-heading)", color:"#0f172a", marginBottom:"0.5rem" }}>
-              {filter === "all" ? "No inquiries yet" : `No ${filter} inquiries`}
-            </h3>
-            <p style={{ color:"#94a3b8", marginBottom:"1.5rem" }}>
-              {filter === "all" ? "Browse listings and send a visit request to get started!" : `You have no ${filter} inquiries at the moment.`}
-            </p>
-            <Link to="/">
-              <button style={{ background:"linear-gradient(135deg,#2563eb,#1d4ed8)", color:"#fff", border:"none", borderRadius:12, padding:"0.75rem 2rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", fontSize:"0.9rem" }}>
-                🏠 Browse Listings
-              </button>
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
-            {filtered.map((inquiry, idx) => {
-              const sc = statusConfig[inquiry.status] || statusConfig.pending;
-              const rtc = roomTypeColors[inquiry.boarding?.roomType] || roomTypeColors.Other;
-              const imgSrc = inquiry.boarding?.image ? `${IMAGE_BASE}${inquiry.boarding.image}` : null;
-
+        {/* Inquiry List */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.8rem" }}>
+          {filtered.length === 0 ? (
+            <div style={{ background: '#fff', padding: '6rem 2rem', borderRadius: '32px', textAlign: 'center', border: '1px solid #f1f5f9' }}>
+               <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🍃</div>
+               <h3 style={{ color: '#1e293b', fontWeight: 800, fontSize: '1.5rem' }}>No requests found</h3>
+               <p style={{ color: '#94a3b8', marginBottom: '2.5rem', maxWidth: '400px', margin: '0 auto 2.5rem' }}>Start your journey by exploring available boardings and sending an inquiry.</p>
+               <Link to="/" style={{ textDecoration: 'none' }}>
+                  <button style={{ background: '#10b981', color: '#fff', border: 'none', padding: '1.1rem 2.5rem', borderRadius: 18, fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 20px rgba(16,185,129,0.2)' }}>Explore Listings</button>
+               </Link>
+            </div>
+          ) : (
+            filtered.map(inq => {
+              const theme = statusTheme[inq.status] || statusTheme.pending;
+              const imgSrc = inq.boarding?.image ? `${IMAGE_BASE}${inq.boarding.image}` : null;
+              
               return (
-                <div key={inquiry._id} className="miq-card"
-                  style={{ background:"#fff", borderRadius:18, boxShadow:"0 4px 24px rgba(15,23,42,0.08)", overflow:"hidden", border:`1.5px solid ${sc.border}`, animationDelay:`${idx*0.05}s` }}>
-
-                  {/* Status banner */}
-                  <div style={{ background:sc.bg, padding:"0.65rem 1.2rem", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${sc.border}` }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
-                      <span style={{ fontSize:"1rem" }}>{sc.icon}</span>
-                      <span style={{ fontWeight:800, color:sc.color, fontSize:"0.85rem" }}>{sc.label}</span>
-                      <span style={{ color:sc.color, fontSize:"0.8rem", opacity:0.8 }}>— {sc.desc}</span>
+                <div key={inq._id} className="modern-card" style={{ background: "#fff", borderRadius: 32, overflow: "hidden", border: `1px solid #f1f5f9`, display: 'flex', flexWrap: 'wrap' }}>
+                  
+                  {/* Left: Boarding Profile (Grey/Slate accent) */}
+                  <div style={{ width: 300, background: '#f8fafc', padding: '2rem', borderRight: '1px solid #f1f5f9' }}>
+                    <div style={{ background: theme.bg, color: theme.color, padding: "6px 14px", borderRadius: 14, fontSize: "0.75rem", fontWeight: 900, display: 'inline-flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', marginBottom: '1.8rem', border: `1px solid ${theme.color}20` }}>
+                      {theme.icon} {theme.label}
                     </div>
-                    <span style={{ fontSize:"0.72rem", color:sc.color, opacity:0.7, display:"flex", alignItems:"center", gap:"0.3rem" }}>
-                      <FiClock size={11}/>{new Date(inquiry.updatedAt).toLocaleDateString("en-LK", { month:"short", day:"numeric", hour:"2-digit", minute:"2-digit" })}
-                    </span>
+                    
+                    <div style={{ position: 'relative', marginBottom: '1.2rem' }}>
+                        {imgSrc ? (
+                            <img src={imgSrc} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 22 }} />
+                        ) : (
+                            <div style={{ width: '100%', height: 140, background: '#e2e8f0', borderRadius: 22, display:'flex', alignItems:'center', justifyContent:'center' }}><FiHome size={35} color="#94a3b8"/></div>
+                        )}
+                    </div>
+
+                    <h5 style={{ fontWeight: 800, color: "#1e293b", fontSize: '1.2rem', marginBottom: '8px', lineHeight: 1.3 }}>{inq.boarding?.title}</h5>
+                    <div style={{ color: '#64748b', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '7px' }}>
+                      <FiMapPin color="#10b981" /> {inq.boarding?.location}
+                    </div>
                   </div>
 
-                  <div style={{ padding:"1.2rem" }}>
-                    <div className="row g-3">
-                      {/* Left - Listing info */}
-                      <div className="col-md-5">
-                        <Link to={`/boarding/${inquiry.boarding?._id}`} style={{ textDecoration:"none" }}>
-                          <div style={{ display:"flex", gap:"0.8rem", alignItems:"flex-start", padding:"0.85rem", background:"#f8fafc", borderRadius:12, border:"1px solid #e2e8f0", transition:"all 0.15s", cursor:"pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.borderColor="#2563eb"}
-                            onMouseLeave={e => e.currentTarget.style.borderColor="#e2e8f0"}>
-                            {imgSrc ? (
-                              <img src={imgSrc} alt="" style={{ width:56, height:48, objectFit:"cover", borderRadius:8, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>
-                            ) : (
-                              <div style={{ width:56, height:48, background:"linear-gradient(135deg,#1e293b,#334155)", borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"1.4rem", flexShrink:0 }}>🏠</div>
-                            )}
-                            <div style={{ minWidth:0 }}>
-                              <div style={{ fontWeight:800, fontSize:"0.88rem", color:"#0f172a", lineHeight:1.3, marginBottom:"0.3rem" }}>{inquiry.boarding?.title || "Listing"}</div>
-                              <div style={{ fontSize:"0.75rem", color:"#64748b", display:"flex", alignItems:"center", gap:"0.3rem", marginBottom:"0.3rem" }}>
-                                <FiMapPin size={10}/>{inquiry.boarding?.location}
-                              </div>
-                              <div style={{ display:"flex", gap:"0.4rem", alignItems:"center" }}>
-                                <span style={{ background:rtc.bg, color:rtc.color, fontSize:"0.68rem", fontWeight:700, padding:"0.1rem 0.5rem", borderRadius:20 }}>{inquiry.boarding?.roomType}</span>
-                                {inquiry.boarding?.price && <span style={{ fontSize:"0.75rem", color:"#2563eb", fontWeight:700 }}>LKR {inquiry.boarding.price.toLocaleString()}/mo</span>}
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-
-                        {/* Owner info */}
-                        {inquiry.owner && (
-                          <div style={{ marginTop:"0.6rem", padding:"0.6rem 0.85rem", background:"#f0f9ff", borderRadius:10, border:"1px solid #bae6fd", display:"flex", alignItems:"center", gap:"0.5rem" }}>
-                            <div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#2563eb,#1d4ed8)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"0.8rem", flexShrink:0 }}>👤</div>
-                            <div>
-                              <div style={{ fontSize:"0.75rem", color:"#0369a1", fontWeight:700 }}>{inquiry.owner.name}</div>
-                              <div style={{ fontSize:"0.7rem", color:"#64748b" }}>{inquiry.owner.email}</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right - Inquiry details */}
-                      <div className="col-md-7">
-                        <div style={{ display:"flex", gap:"1rem", marginBottom:"0.8rem", flexWrap:"wrap" }}>
-                          {inquiry.visitDate && (
-                            <div style={{ display:"flex", alignItems:"center", gap:"0.4rem", background:"#eff6ff", border:"1px solid #bfdbfe", borderRadius:8, padding:"0.4rem 0.75rem" }}>
-                              <FiCalendar size={13} color="#2563eb"/>
-                              <span style={{ fontSize:"0.8rem", fontWeight:700, color:"#1d4ed8" }}>
-                                {new Date(inquiry.visitDate).toLocaleDateString("en-LK", { weekday:"short", year:"numeric", month:"short", day:"numeric" })}
-                              </span>
-                            </div>
-                          )}
-                          <div style={{ display:"flex", alignItems:"center", gap:"0.4rem", color:"#94a3b8", fontSize:"0.75rem" }}>
-                            <FiClock size={11}/>
-                            Sent {new Date(inquiry.createdAt).toLocaleDateString("en-LK", { month:"short", day:"numeric", year:"numeric" })}
-                          </div>
+                  {/* Right: Interaction Details (White) */}
+                  <div style={{ flex: 1, padding: '2rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1.8rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: 52, height: 52, borderRadius: 18, background: '#f0fdf4', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem' }}>
+                          <FiUser />
                         </div>
-
-                        {/* Message */}
-                        <div style={{ background:"#f8fafc", borderRadius:10, padding:"0.85rem 1rem", borderLeft:"3px solid #2563eb", marginBottom:"0.8rem" }}>
-                          <div style={{ fontSize:"0.72rem", fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:"0.3rem", display:"flex", alignItems:"center", gap:"0.3rem" }}>
-                            <FiMessageSquare size={10}/> Your Message
-                          </div>
-                          <p style={{ margin:0, fontSize:"0.875rem", color:"#374151", lineHeight:1.7 }}>"{inquiry.message}"</p>
-                        </div>
-
-                        {/* Action buttons */}
-                        <div style={{ display:"flex", gap:"0.5rem", flexWrap:"wrap" }}>
-                          <Link to={`/boarding/${inquiry.boarding?._id}`}>
-                            <button style={{ background:"linear-gradient(135deg,#2563eb,#1d4ed8)", color:"#fff", border:"none", borderRadius:8, padding:"0.5rem 1rem", fontSize:"0.8rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", display:"flex", alignItems:"center", gap:"0.4rem" }}>
-                              <FiHome size={12}/> View Listing
-                            </button>
-                          </Link>
-                          {inquiry.status === "accepted" && (
-                            <a href={`mailto:${inquiry.owner?.email}`}
-                              style={{ background:"#f0fdf4", color:"#059669", border:"1px solid #bbf7d0", borderRadius:8, padding:"0.5rem 1rem", fontSize:"0.8rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", textDecoration:"none", display:"flex", alignItems:"center", gap:"0.4rem" }}>
-                              📧 Contact Owner
-                            </a>
-                          )}
-                          <button onClick={() => setDeleteModal(inquiry._id)}
-                            style={{ background:"#fef2f2", color:"#dc2626", border:"1px solid #fecaca", borderRadius:8, padding:"0.5rem 0.75rem", fontSize:"0.8rem", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}
-                            title="Delete this request">
-                            🗑️
-                          </button>
+                        <div>
+                          <div style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>{inq.owner?.name || "Property Owner"}</div>
+                          <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Verified Member</div>
                         </div>
                       </div>
+                      <div style={{ textAlign: 'right' }}>
+                         <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                           <FiCalendar color="#10b981"/> {inq.visitDate ? new Date(inq.visitDate).toLocaleDateString() : 'ASAP'}
+                         </div>
+                         <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '5px' }}>Preferred Visit Date</div>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: 22, border: '1px solid #f1f5f9', color: '#334155', fontSize: '1rem', fontStyle: 'italic', lineHeight: 1.7, marginBottom: 'auto' }}>
+                      <FiMessageSquare size={14} style={{ marginRight: 8, color: '#10b981' }}/>
+                      "{inq.message}"
+                    </div>
+
+                    {/* Action Bar - Styled Emerald */}
+                    <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '2rem' }}>
+                      <Link to={`/boarding/${inq.boarding?._id}`} style={{ textDecoration: 'none' }}>
+                        <button style={{ background: '#fff', color: '#1e293b', border: '1px solid #e2e8f0', padding: '0.8rem 1.5rem', borderRadius: 15, fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', transition: '0.2s' }}>View Details</button>
+                      </Link>
+                      {inq.status === 'accepted' && (
+                        <a href={`mailto:${inq.owner?.email}`} style={{ background: '#10b981', color: '#fff', border: 'none', padding: '0.8rem 1.8rem', borderRadius: 15, fontWeight: 800, textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 5px 15px rgba(16,185,129,0.2)' }}>
+                            <FiMail /> Contact Owner
+                        </a>
+                      )}
+                      <button onClick={() => setDeleteModal(inq._id)} style={{ background: '#fff', color: '#ef4444', border: '1px solid #fee2e2', padding: '0.8rem', borderRadius: 15, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                        <FiTrash2 size={18} />
+                      </button>
                     </div>
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
+        </div>
+
+        {/* Clear All - Bottom Section */}
+        {filtered.length > 0 && (
+          <div style={{ marginTop: '6rem', textAlign: 'center', borderTop: '2px dashed #e2e8f0', paddingTop: '4rem' }}>
+             <button onClick={() => setClearModal(true)} style={{ background: '#fff', color: '#ef4444', border: '1px solid #fee2e2', padding: '1.1rem 3rem', borderRadius: 22, fontWeight: 800, cursor: 'pointer', transition: '0.3s', boxShadow: '0 10px 25px rgba(239,68,68,0.06)' }}>
+               <FiTrash2 style={{ marginRight: 10 }}/> Clear All {filter !== 'all' ? filter : ''} History
+             </button>
+             <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '15px' }}>Permanently remove these requests from your dashboard.</p>
           </div>
         )}
       </div>
 
-      {/* Delete Single Modal */}
-      {deleteModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}
-          onClick={e => { if (e.target === e.currentTarget) setDeleteModal(null); }}>
-          <div style={{ background:"#fff", borderRadius:20, padding:"2rem", width:"100%", maxWidth:400, boxShadow:"0 24px 64px rgba(0,0,0,0.2)", textAlign:"center" }}>
-            <div style={{ width:56, height:56, background:"#fef2f2", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 1rem", fontSize:"1.5rem" }}>🗑️</div>
-            <h3 style={{ fontFamily:"var(--font-heading)", fontWeight:800, color:"#0f172a", marginBottom:"0.5rem" }}>Delete This Request?</h3>
-            <p style={{ color:"#64748b", fontSize:"0.9rem", marginBottom:"1.5rem" }}>This will permanently remove this visit request. This action cannot be undone.</p>
-            <div style={{ display:"flex", gap:"0.8rem" }}>
-              <button onClick={() => setDeleteModal(null)}
-                style={{ flex:1, background:"#f1f5f9", color:"#64748b", border:"none", borderRadius:12, padding:"0.75rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", fontSize:"0.9rem" }}>
-                Cancel
-              </button>
-              <button onClick={() => handleDeleteOne(deleteModal)}
-                style={{ flex:1, background:"linear-gradient(135deg,#dc2626,#b91c1c)", color:"#fff", border:"none", borderRadius:12, padding:"0.75rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", fontSize:"0.9rem" }}>
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Clear Confirmation Modal */}
-      {clearModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}
-          onClick={e => { if (e.target === e.currentTarget) setClearModal(false); }}>
-          <div style={{ background:"#fff", borderRadius:20, padding:"2rem", width:"100%", maxWidth:420, boxShadow:"0 24px 64px rgba(0,0,0,0.2)", textAlign:"center" }}>
-            <div style={{ width:56, height:56, background:"#fef2f2", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 1rem", fontSize:"1.5rem" }}>🗑️</div>
-            <h3 style={{ fontFamily:"var(--font-heading)", fontWeight:800, color:"#0f172a", marginBottom:"0.5rem" }}>
-              Clear {filter === 'all' ? 'All' : filter.charAt(0).toUpperCase()+filter.slice(1)} Requests?
-            </h3>
-            <p style={{ color:"#64748b", fontSize:"0.9rem", marginBottom:"0.5rem" }}>
-              This will permanently delete <strong>{filtered.length}</strong> {filter === 'all' ? '' : filter} {filtered.length === 1 ? 'request' : 'requests'}.
-            </p>
-            <p style={{ color:"#94a3b8", fontSize:"0.8rem", marginBottom:"1.5rem" }}>This action cannot be undone.</p>
-            <div style={{ display:"flex", gap:"0.8rem" }}>
-              <button onClick={() => setClearModal(false)}
-                style={{ flex:1, background:"#f1f5f9", color:"#64748b", border:"none", borderRadius:12, padding:"0.75rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", fontSize:"0.9rem" }}>
-                Cancel
-              </button>
-              <button onClick={handleClear} disabled={clearing}
-                style={{ flex:1, background:"linear-gradient(135deg,#dc2626,#b91c1c)", color:"#fff", border:"none", borderRadius:12, padding:"0.75rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", fontSize:"0.9rem", opacity:clearing?0.7:1 }}>
-                {clearing ? 'Clearing...' : 'Yes, Clear'}
+      {/* Confirmation Modals */}
+      {(deleteModal || clearModal) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(6px)' }}>
+          <div style={{ background: '#fff', padding: '3rem', borderRadius: 36, maxWidth: 440, textAlign: 'center', boxShadow: '0 30px 60px rgba(0,0,0,0.25)' }}>
+            <div style={{ width: 70, height: 70, background: '#fef2f2', color: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.8rem', fontSize: '2rem' }}><FiTrash2 /></div>
+            <h3 style={{ fontWeight: 800, color: '#1e293b', fontSize: '1.6rem', marginBottom: '12px' }}>Confirm Deletion</h3>
+            <p style={{ color: '#64748b', lineHeight: 1.6, marginBottom: '2.5rem', fontSize: '1.05rem' }}>Are you sure you want to remove these items? This action cannot be reversed.</p>
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button onClick={() => { setDeleteModal(null); setClearModal(false); }} style={{ flex: 1, padding: '1.1rem', borderRadius: 18, border: 'none', background: '#f1f5f9', fontWeight: 800, color: '#64748b', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={deleteModal ? () => handleDeleteOne(deleteModal) : handleClear} style={{ flex: 1, padding: '1.1rem', borderRadius: 18, border: 'none', background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>
+                {clearing ? 'Processing...' : 'Yes, Delete'}
               </button>
             </div>
           </div>
