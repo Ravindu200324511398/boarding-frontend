@@ -1,222 +1,268 @@
-# 🏠 Boarding Finder — Frontend (React)
+# 🏠 Boarding Finder — Backend API
 
-## Tech Stack
-- **React 18** + **Vite**
-- **React Router v6** — Client-side routing
-- **Axios** — API requests
-- **React Icons** (Feather Icons) — UI icons
-- **Bootstrap 5** — Grid & utility classes
-- **Context API** — Global auth state
+> RESTful API server for the Boarding Finder platform — a web application to help students find boarding houses near universities across Sri Lanka.
+
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green?logo=node.js)](https://nodejs.org)
+[![Express](https://img.shields.io/badge/Express-4.18-lightgrey?logo=express)](https://expressjs.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB-7.x-green?logo=mongodb)](https://mongodb.com)
+[![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
 ---
 
-## 📁 Folder Structure
+## 📋 Table of Contents
+
+- [About](#about)
+- [Tech Stack](#tech-stack)
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Endpoints](#api-endpoints)
+- [Seeding the Database](#seeding-the-database)
+- [Author](#author)
+
+---
+
+## About
+
+The Boarding Finder backend is a Node.js/Express REST API that powers the full boarding house listing platform. It handles user authentication, boarding listings, favorites, inquiries, ratings, admin management, and AI-powered listing generation using Claude (Anthropic).
+
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Node.js | Runtime environment |
+| Express.js | Web framework |
+| MongoDB | Database |
+| Mongoose | ODM for MongoDB |
+| JSON Web Tokens (JWT) | Authentication |
+| bcryptjs | Password hashing |
+| Multer | Image/file uploads |
+| @anthropic-ai/sdk | AI listing generation via Claude |
+| dotenv | Environment variable management |
+
+---
+
+## Features
+
+- 🔐 **JWT Authentication** — Register, login, logout with 7-day tokens
+- 🚫 **Ban System** — Admins can ban/unban users; banned users are blocked from login and all protected routes instantly
+- 🏠 **Boarding Listings** — Full CRUD with image uploads (up to 8 photos), location, amenities, room type
+- ❤️ **Favorites** — Users can save and manage favourite listings
+- 📩 **Inquiries** — Students can send visit requests to listing owners
+- ⭐ **Ratings & Reviews** — Users can rate and review boarding places
+- 🗺️ **Map Coordinates** — Lat/lng support for map-based browsing
+- 🤖 **AI Listing Writer** — Generate and improve listing descriptions using Claude AI
+- 👮 **Admin Panel API** — Manage users, listings, view stats, promote/demote admins
+- 📸 **Avatar Uploads** — Profile photo upload and management
+- 🔑 **Password Reset** — Secure token-based password reset flow
+
+---
+
+## Project Structure
 
 ```
-boarding-frontend/
-├── public/
-├── src/
-│   ├── api/
-│   │   └── axios.js             # Axios instance with base URL + auth header
-│   ├── components/
-│   │   ├── Navbar.jsx           # Top navigation bar (with avatar)
-│   │   ├── ProtectedRoute.jsx   # Redirects to /login if not authenticated
-│   │   ├── AdminRoute.jsx       # Redirects if not admin
-│   │   └── AvatarUpload.jsx     # Profile photo upload component
-│   ├── context/
-│   │   └── AuthContext.jsx      # Global auth state (user, token, login, logout)
-│   ├── pages/
-│   │   ├── Home.jsx             # Browse all listings with filters
-│   │   ├── Login.jsx            # Login form + forgot password link
-│   │   ├── Register.jsx         # Register form
-│   │   ├── ForgotPassword.jsx   # Request password reset
-│   │   ├── ResetPassword.jsx    # Set new password via token
-│   │   ├── Profile.jsx          # User profile (3 tabs: info, password, listings)
-│   │   ├── AddBoarding.jsx      # Add new boarding listing
-│   │   ├── BoardingDetail.jsx   # Single listing detail page
-│   │   ├── Favorites.jsx        # Saved favorites
-│   │   ├── MapPage.jsx          # Map view of listings
-│   │   ├── AdminLogin.jsx       # Admin login page
-│   │   ├── AdminDashboard.jsx   # Admin stats overview
-│   │   ├── AdminUsers.jsx       # Manage all users
-│   │   ├── AdminUserDetail.jsx  # Single user management
-│   │   └── AdminBoardings.jsx   # Manage all boardings
-│   ├── App.jsx                  # Route definitions
-│   ├── main.jsx                 # React entry point
-│   └── index.css                # Global styles + CSS variables
-├── index.html
-├── vite.config.js
+server/
+├── middleware/
+│   ├── auth.js           # JWT protect middleware (ban check included)
+│   └── admin.js          # Admin-only route guard
+├── models/
+│   ├── User.js           # User schema (name, email, password, isAdmin, isBanned, avatar)
+│   ├── Boarding.js       # Boarding listing schema
+│   ├── Inquiry.js        # Inquiry schema
+│   └── Rating.js         # Rating/review schema
+├── routes/
+│   ├── auth.js           # Auth routes (register, login, profile, avatar, password reset)
+│   ├── boardings.js      # Boarding CRUD routes
+│   ├── favorites.js      # Favorites routes
+│   ├── inquiries.js      # Inquiry routes
+│   ├── ratings.js        # Rating routes
+│   ├── admin.js          # Admin routes (users, ban, promote, stats)
+│   └── ai.js             # AI listing generation routes
+├── uploads/              # Uploaded images (auto-created)
+│   └── avatars/          # Profile photos
+├── server.js             # App entry point
+├── seed.js               # Database seeder
+├── .env                  # Environment variables (not committed)
 └── package.json
 ```
 
 ---
 
-## ⚙️ Setup & Installation
+## Getting Started
 
-### 1. Install dependencies
+### Prerequisites
+
+- Node.js 18+
+- MongoDB (local or Atlas)
+
+### Installation
+
 ```bash
-cd boarding-frontend
+# 1. Clone the repository
+git clone https://github.com/Ravindu200324511398/boarding-finder.git
+cd boarding-finder/server
+
+# 2. Install dependencies
 npm install
-```
 
-### 2. Make sure the backend is running first
-The frontend expects the backend at **http://localhost:5001**
+# 3. Create your .env file
+cp .env.example .env
+# Then fill in your values (see Environment Variables section)
 
-### 3. Start the frontend
-```bash
+# 4. Seed the database with sample data (optional)
+node seed.js
+
+# 5. Start the development server
 npm run dev
+
+# Or for production
+npm start
 ```
 
-App runs at: **http://localhost:3000** (or the port Vite assigns, check terminal output)
+The server will run at: `http://localhost:5001`
 
 ---
 
-## 🔑 Default Login Credentials
+## Environment Variables
 
-> Run `node seed.js` inside the `server/` folder first to create these accounts.
+Create a `.env` file in the `server/` directory:
 
-### 👑 Admin Login
-- **URL:** http://localhost:3000/admin
-- **Email:** `admin@boarding.com`
-- **Password:** `admin123`
-
-### 👤 Regular User Login
-- **URL:** http://localhost:3000/login
-- **Email:** `john@example.com`
-- **Password:** `user1234`
-
----
-
-## 🗺️ Page Routes
-
-| Route                        | Access        | Description                         |
-|------------------------------|---------------|-------------------------------------|
-| `/`                          | Public        | Home — browse all listings          |
-| `/login`                     | Public        | User login                          |
-| `/register`                  | Public        | Create new account                  |
-| `/forgot-password`           | Public        | Request password reset              |
-| `/reset-password/:token`     | Public        | Set new password                    |
-| `/boarding/:id`              | Public        | View single listing details         |
-| `/map`                       | Public        | Map view of listings                |
-| `/add`                       | Logged In     | Add a new boarding listing          |
-| `/favorites`                 | Logged In     | View saved favorites                |
-| `/profile`                   | Logged In     | View/edit profile, change password  |
-| `/admin`                     | Public        | Admin login page                    |
-| `/admin/dashboard`           | Admin Only    | Stats dashboard                     |
-| `/admin/users`               | Admin Only    | Manage all users                    |
-| `/admin/users/:id`           | Admin Only    | User detail                         |
-| `/admin/boardings`           | Admin Only    | Manage all boardings                |
-
----
-
-## 🔐 How Auth Works in the Frontend
-
-1. On login, the JWT token and user object are saved to `localStorage`
-2. `AuthContext` reads them on app load and provides them globally
-3. `ProtectedRoute` checks `isAuth` — if false, redirects to `/login`
-4. `AdminRoute` checks `user.isAdmin` — if false, redirects to `/`
-5. Every API call via `axios.js` automatically attaches the token:
-   ```js
-   // src/api/axios.js
-   instance.interceptors.request.use(config => {
-     const token = localStorage.getItem('bf_token');
-     if (token) config.headers.Authorization = `Bearer ${token}`;
-     return config;
-   });
-   ```
-
----
-
-## 👤 Profile Page Features
-
-The `/profile` page has three tabs:
-
-### Tab 1 — Personal Info
-- View your name, email, role, and member-since date
-- Click **Edit** to update name and/or email
-- Click **Save** to apply changes
-
-### Tab 2 — Change Password
-- Enter current password
-- Enter and confirm new password
-- Click **Update Password**
-
-### Tab 3 — My Listings
-- See all boarding listings you've added
-- View or delete each listing
-- Quick link to add a new listing
-
-### Profile Photo Upload
-- Click the avatar circle or the camera icon (📷) to pick a photo
-- Preview appears instantly before saving
-- Click **Save Photo** to upload to the server
-- **Remove photo** button appears when a photo is set
-- Falls back to initials (e.g., "KP") when no photo is uploaded
-
----
-
-## 🔄 Forgot Password Flow
-
-1. Go to `/login` → click **"Forgot password?"**
-2. Enter your email on `/forgot-password`
-3. A reset link appears on screen (in dev mode — no email server needed)
-4. Copy and open the link → `/reset-password/:token`
-5. Enter and confirm your new password
-6. You are automatically logged in and redirected home
-
----
-
-## 🌐 Axios Base URL
-
-The API base URL is set in `src/api/axios.js`:
-```js
-const api = axios.create({
-  baseURL: 'http://localhost:5001/api',
-});
+```env
+PORT=5001
+MONGO_URI=mongodb://localhost:27017/boarding_finder
+JWT_SECRET=your_super_secret_jwt_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
 
-If your backend runs on a different port, update `baseURL` here.
+| Variable | Description |
+|---|---|
+| `PORT` | Port to run the server on (default: 5001) |
+| `MONGO_URI` | MongoDB connection string |
+| `JWT_SECRET` | Secret key for signing JWT tokens |
+| `ANTHROPIC_API_KEY` | API key from [Anthropic Console](https://console.anthropic.com) for AI features |
 
 ---
 
-## 📦 Key Dependencies
+## API Endpoints
 
-```json
-"dependencies": {
-  "axios": "^1.4.0",
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "react-icons": "^4.10.0",
-  "react-router-dom": "^6.14.0"
-}
-```
+### Auth — `/api/auth`
 
-Install with:
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/register` | ❌ | Register a new user |
+| POST | `/login` | ❌ | Login (returns JWT token) |
+| GET | `/me` | ✅ | Get current user info |
+| GET | `/profile` | ✅ | Get profile + listings |
+| PUT | `/profile` | ✅ | Update name, email, password |
+| POST | `/avatar` | ✅ | Upload profile photo |
+| DELETE | `/avatar` | ✅ | Remove profile photo |
+| POST | `/forgot-password` | ❌ | Request password reset token |
+| POST | `/reset-password/:token` | ❌ | Reset password with token |
+
+### Boardings — `/api/boardings`
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/` | ❌ | Get all listings (with filters) |
+| POST | `/` | ✅ | Create new listing |
+| GET | `/:id` | ❌ | Get single listing |
+| PUT | `/:id` | ✅ | Update listing (owner only) |
+| DELETE | `/:id` | ✅ | Delete listing (owner only) |
+| PATCH | `/:id/availability` | ✅ | Toggle available/occupied |
+
+### Favorites — `/api/favorites`
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/` | ✅ | Get user's favourites |
+| POST | `/:boardingId` | ✅ | Add to favourites |
+| DELETE | `/:boardingId` | ✅ | Remove from favourites |
+
+### Inquiries — `/api/inquiries`
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/:boardingId` | ❌ | Send inquiry to owner |
+| GET | `/` | ✅ | Get inquiries for your listings |
+| GET | `/mine` | ✅ | Get inquiries you sent |
+
+### Ratings — `/api/ratings`
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/:boardingId` | ❌ | Get ratings for a listing |
+| POST | `/:boardingId` | ✅ | Submit rating and review |
+| DELETE | `/:boardingId` | ✅ | Delete your rating |
+
+### Admin — `/api/admin` (Admin only)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/stats` | Dashboard statistics |
+| GET | `/users` | List all users |
+| GET | `/users/:id` | Get user detail + listings |
+| DELETE | `/users/:id` | Delete user and their listings |
+| PATCH | `/users/:id/toggle-admin` | Promote/demote admin |
+| PATCH | `/users/:id/toggle-ban` | Ban/unban user |
+| GET | `/boardings` | List all boardings |
+| DELETE | `/boardings/:id` | Delete any boarding |
+
+### AI — `/api/ai`
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/generate-listing` | ✅ | Generate title + description using Claude AI |
+| POST | `/improve-listing` | ✅ | Improve existing description using Claude AI |
+
+---
+
+## Seeding the Database
+
+The seed script creates sample users and boarding listings across Sri Lanka:
+
 ```bash
-npm install axios react-icons react-router-dom
+node seed.js
 ```
+
+After seeding, use these credentials:
+
+```
+👤 ADMIN
+   Email:    admin@boardingfinder.com
+   Password: admin123
+
+👤 USERS
+   kasun@example.com    / password123
+   nimasha@example.com  / password123
+   ravindu@example.com  / password123
+```
+
+> ⚠️ The seed script deletes all existing data before inserting new records.
 
 ---
 
-## 🚀 npm Scripts
+## Ban System
 
-```json
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "preview": "vite preview"
-}
-```
+When a user is banned by an admin:
+
+- ❌ They **cannot log in** — login returns a `403` error with a clear message
+- ❌ All **protected API routes** return `403 Forbidden` immediately, even with a valid token
+- ✅ **Unbanning** restores full access instantly on next login
+
+The middleware fetches the user fresh from the database on every request, so banning takes effect immediately without waiting for the token to expire.
 
 ---
 
-## ❓ Common Issues
+## Author
 
-| Issue | Fix |
-|-------|-----|
-| Blank page on load | Make sure `react-router-dom` is installed |
-| API calls fail (Network Error) | Backend must be running on port 5001 |
-| Images not loading | Check `http://localhost:5001/uploads/` is accessible |
-| Avatar not updating in navbar | `updateUser()` from `AuthContext` must be called after upload |
-| Login works but stays on login page | Check `AuthContext` reads from `localStorage` on mount |
-| `useAuth` returns undefined | Make sure `<AuthProvider>` wraps `<App>` in `main.jsx` |
+**Ravindu Saranga**
+- GitHub: [@Ravindu200324511398](https://github.com/Ravindu200324511398)
+
+---
+
+## License
+
+This project is licensed under the MIT License.
