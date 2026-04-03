@@ -1,172 +1,624 @@
-// ============================================
-// Add Boarding Page
-// ============================================
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiUpload, FiMapPin, FiDollarSign, FiPhone } from 'react-icons/fi';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import {
+  FiHome, FiMapPin, FiDollarSign, FiUsers, FiPhone,
+  FiFileText, FiPlus, FiX, FiUpload, FiSave, FiZap,
+  FiCheckCircle, FiAlertCircle, FiRefreshCw, FiEdit3
+} from 'react-icons/fi';
 import api from '../api/axios';
 
+// Fix Leaflet default marker icon (broken in React builds)
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// ── 1. CONSTANTS & STATIC STYLES ──────────────────────────
+const AMENITY_OPTIONS = [
+  'WiFi', 'Hot Water', 'Air Conditioning', 'Fan', 'Attached Bathroom',
+  'Kitchen Access', 'Laundry', 'Parking', 'Furnished', 'Study Desk',
+  'CCTV', 'Private Entrance', 'Common Kitchen', 'Meals Available',
+];
+
+const ROOM_TYPES  = ['Single', 'Double', 'Triple', 'Annex', 'Studio'];
+const GENDER_OPTS = ['Any', 'Male', 'Female'];
+
+// Default centre: Sri Lanka
+const SRI_LANKA_CENTER = [7.8731, 80.7718];
+
+const inpBaseStyle = {
+  border: 'none', outline: 'none', flex: 1,
+  padding: '0.75rem 1rem', fontSize: '0.95rem',
+  fontFamily: 'var(--font-body)', background: 'transparent',
+  color: '#0f172a', width: '100%',
+};
+
+// ── 2. HELPER COMPONENTS ──────────────────────────────────
+
+const AIButton = ({ onClick, loading, label, icon, variant = 'primary' }) => {
+  const isPrimary = variant === 'primary';
+  return (
+    <button type="button" onClick={onClick} disabled={loading}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
+        background: isPrimary ? 'linear-gradient(135deg, #6d28d9, #2563eb)' : 'rgba(109,40,217,0.08)',
+        color: isPrimary ? '#fff' : '#6d28d9',
+        border: isPrimary ? 'none' : '1.5px solid rgba(109,40,217,0.25)',
+        borderRadius: 10, padding: isPrimary ? '0.65rem 1.2rem' : '0.5rem 1rem',
+        fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '0.875rem',
+        cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
+        transition: 'all 0.18s', whiteSpace: 'nowrap',
+      }}
+      onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}>
+      {loading
+        ? <><span className="spinner-border spinner-border-sm" style={{ width: '0.8rem', height: '0.8rem' }} /> Generating...</>
+        : <>{icon || <FiZap size={14} />} {label}</>}
+    </button>
+  );
+};
+
+const Field = ({ label, hint, required, children, badge }) => (
+  <div style={{ marginBottom: '1.2rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.45rem' }}>
+      <label style={{ fontSize: '0.82rem', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        {label}{required && <span style={{ color: '#ef4444', marginLeft: 3 }}>*</span>}
+      </label>
+      {badge && (
+        <span style={{ background: 'linear-gradient(135deg,#6d28d9,#2563eb)', color: '#fff', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.5rem', borderRadius: 20, letterSpacing: '0.06em' }}>
+          {badge}
+        </span>
+      )}
+    </div>
+    {children}
+    {hint && <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0.3rem 0 0' }}>{hint}</p>}
+  </div>
+);
+
+const AIResultCard = ({ title, description, onApply, onRegenerate, loading }) => (
+  <div style={{
+    background: 'linear-gradient(135deg, rgba(109,40,217,0.04), rgba(37,99,235,0.04))',
+    border: '1.5px solid rgba(109,40,217,0.2)', borderRadius: 14,
+    padding: '1.2rem 1.3rem', marginTop: '0.8rem',
+    position: 'relative', overflow: 'hidden',
+  }}>
+    <div style={{ position: 'absolute', top: 0, right: 0, width: 60, height: 60, background: 'linear-gradient(135deg,rgba(109,40,217,0.1),transparent)', borderRadius: '0 14px 0 60px' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.8rem' }}>
+      <FiZap size={14} color="#6d28d9" />
+      <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#6d28d9', textTransform: 'uppercase', letterSpacing: '0.06em' }}>AI Generated</span>
+    </div>
+    {title && (
+      <>
+        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', margin: '0 0 0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Title</p>
+        <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', margin: '0 0 0.9rem', lineHeight: 1.4 }}>{title}</p>
+      </>
+    )}
+    <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', margin: '0 0 0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</p>
+    <p style={{ fontSize: '0.88rem', color: '#374151', margin: '0 0 1rem', lineHeight: 1.65 }}>{description}</p>
+    <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+      <button type="button" onClick={onApply}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'linear-gradient(135deg,#6d28d9,#2563eb)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+        <FiCheckCircle size={13} /> Apply to form
+      </button>
+      <button type="button" onClick={onRegenerate} disabled={loading}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(109,40,217,0.08)', color: '#6d28d9', border: '1.5px solid rgba(109,40,217,0.2)', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 700, fontSize: '0.82rem', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)' }}>
+        <FiRefreshCw size={12} /> Regenerate
+      </button>
+    </div>
+  </div>
+);
+
+const SectionHead = ({ number, title, sub }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.4rem', paddingBottom: '0.8rem', borderBottom: '1px solid #f1f5f9' }}>
+    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#6d28d9,#2563eb)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <span style={{ color: '#fff', fontWeight: 800, fontSize: '0.85rem' }}>{number}</span>
+    </div>
+    <div>
+      <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>{title}</div>
+      {sub && <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '0.1rem' }}>{sub}</div>}
+    </div>
+  </div>
+);
+
+const InputWrapper = ({ icon, children, isFocused }) => (
+  <div style={{
+    display: 'flex', alignItems: 'center',
+    border: `1.5px solid ${isFocused ? '#2563eb' : '#e2e8f0'}`,
+    borderRadius: 10, overflow: 'hidden', transition: 'border-color 0.15s',
+  }}>
+    {icon && (
+      <span style={{ padding: '0 0.85rem', color: '#94a3b8', background: '#f8fafc', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #e2e8f0' }}>
+        {icon}
+      </span>
+    )}
+    {children}
+  </div>
+);
+
+// ── 3. MAP CLICK HANDLER ──────────────────────────────────
+const MapClickHandler = ({ onLocationSelect }) => {
+  useMapEvents({
+    click(e) {
+      onLocationSelect(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+};
+
+// ── 4. MAP PICKER COMPONENT ───────────────────────────────
+const MapPicker = ({ lat, lng, onChange }) => {
+  const hasPin = lat !== '' && lng !== '';
+  const markerPos = hasPin ? [parseFloat(lat), parseFloat(lng)] : null;
+
+  const handleSelect = useCallback((newLat, newLng) => {
+    onChange(
+      parseFloat(newLat.toFixed(6)),
+      parseFloat(newLng.toFixed(6))
+    );
+  }, [onChange]);
+
+  const handleClear = () => onChange('', '');
+
+  return (
+    <div>
+      {/* Instruction banner */}
+      <div style={{
+        background: hasPin
+          ? 'linear-gradient(135deg, rgba(5,150,105,0.07), rgba(16,185,129,0.04))'
+          : 'linear-gradient(135deg, rgba(37,99,235,0.06), rgba(109,40,217,0.04))',
+        border: `1.5px solid ${hasPin ? 'rgba(5,150,105,0.25)' : 'rgba(37,99,235,0.2)'}`,
+        borderRadius: 12, padding: '0.75rem 1rem',
+        marginBottom: '0.75rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '0.5rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <FiMapPin size={15} color={hasPin ? '#059669' : '#2563eb'} />
+          {hasPin ? (
+            <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 600 }}>
+              📍 Location pinned — <span style={{ fontWeight: 400, color: '#374151' }}>{lat}, {lng}</span>
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.85rem', color: '#2563eb', fontWeight: 600 }}>
+              Click anywhere on the map to drop a pin
+            </span>
+          )}
+        </div>
+        {hasPin && (
+          <button type="button" onClick={handleClear}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(239,68,68,0.08)', color: '#dc2626', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, padding: '0.3rem 0.75rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+            <FiX size={12} /> Clear pin
+          </button>
+        )}
+      </div>
+
+      {/* Map */}
+      <div style={{ borderRadius: 14, overflow: 'hidden', border: '1.5px solid #e2e8f0', height: 340, position: 'relative' }}>
+        <MapContainer
+          center={markerPos || SRI_LANKA_CENTER}
+          zoom={markerPos ? 14 : 7}
+          style={{ height: '100%', width: '100%' }}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <MapClickHandler onLocationSelect={handleSelect} />
+          {markerPos && <Marker position={markerPos} />}
+        </MapContainer>
+
+        {/* Crosshair overlay hint */}
+        {!hasPin && (
+          <div style={{
+            position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(15,23,42,0.75)', color: '#fff',
+            borderRadius: 20, padding: '0.35rem 0.9rem',
+            fontSize: '0.75rem', fontWeight: 600, zIndex: 1000,
+            backdropFilter: 'blur(6px)', pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+          }}>
+            🗺️ Scroll to zoom · Click to pin location
+          </div>
+        )}
+      </div>
+
+      {/* Coordinate display / manual override */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', marginTop: '0.75rem' }}>
+        {[
+          { key: 'lat', label: 'Latitude', val: lat },
+          { key: 'lng', label: 'Longitude', val: lng },
+        ].map(({ key, label, val }) => (
+          <div key={key} style={{ position: 'relative' }}>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.3rem' }}>
+              {label}
+            </label>
+            <input
+              type="number" step="any"
+              value={val}
+              onChange={e => {
+                const newVal = e.target.value;
+                if (key === 'lat') onChange(newVal, lng);
+                else onChange(lat, newVal);
+              }}
+              placeholder={key === 'lat' ? '7.8731' : '80.7718'}
+              style={{
+                width: '100%', border: '1.5px solid #e2e8f0', borderRadius: 8,
+                padding: '0.55rem 0.85rem', fontSize: '0.85rem',
+                fontFamily: 'var(--font-body)', color: '#0f172a',
+                outline: 'none', background: '#f8fafc',
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: '0.74rem', color: '#94a3b8', margin: '0.4rem 0 0' }}>
+        You can also type coordinates directly above if you know the exact location.
+      </p>
+    </div>
+  );
+};
+
+
+// ── 5. MAIN COMPONENT ────────────────────────────────────
 const AddBoarding = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    title: '', description: '', price: '', location: '',
-    lat: '', lng: '', roomType: 'Single', amenities: '', contact: '',
-  });
-  const [image, setImage] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setError('');
+  const [form, setForm] = useState({
+    title: '', description: '', location: '',
+    price: '', roomType: 'Single', gender: 'Any', contact: '',
+    lat: '', lng: '',
+  });
+  const [amenities, setAmenities]       = useState([]);
+  const [customAmenity, setCustomAmenity] = useState('');
+  const [images, setImages]             = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+
+  const [focused, setFocused]           = useState('');
+  const [submitting, setSubmitting]     = useState(false);
+  const [error, setError]               = useState('');
+  const [success, setSuccess]           = useState('');
+
+  const [aiLoading, setAiLoading]       = useState(false);
+  const [aiResult, setAiResult]         = useState(null);
+  const [aiImproving, setAiImproving]   = useState(false);
+  const [aiImproved, setAiImproved]     = useState(null);
+  const [aiError, setAiError]           = useState('');
+
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  // Map pin handler
+  const handleMapChange = useCallback((newLat, newLng) => {
+    setForm(f => ({ ...f, lat: newLat, lng: newLng }));
+  }, []);
+
+  const toggleAmenity = (a) =>
+    setAmenities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+
+  const addCustomAmenity = () => {
+    const trimmed = customAmenity.trim();
+    if (trimmed && !amenities.includes(trimmed)) {
+      setAmenities(prev => [...prev, trimmed]);
+      setCustomAmenity('');
+    }
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImage(file);
-    // Create preview URL
-    const url = URL.createObjectURL(file);
-    setPreview(url);
+  const handleImages = (e) => {
+    const files = Array.from(e.target.files);
+    if (images.length + files.length > 8) { setError('Maximum 8 photos allowed'); return; }
+    const oversized = files.find(f => f.size > 5 * 1024 * 1024);
+    if (oversized) { setError('Each image must be under 5MB'); return; }
+    setImages(prev => [...prev, ...files]);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => setImagePreviews(prev => [...prev, ev.target.result]);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (idx) => {
+    setImages(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleGenerate = async () => {
+    if (!form.location || !form.price || !form.roomType) {
+      setAiError('Please fill in Location, Price and Room Type before generating.'); return;
+    }
+    setAiLoading(true); setAiError(''); setAiResult(null);
+    try {
+      const res = await api.post('/ai/generate-listing', {
+        location: form.location, price: form.price,
+        roomType: form.roomType, amenities, gender: form.gender,
+        description: form.description,
+      });
+      setAiResult({ title: res.data.title, description: res.data.description });
+    } catch (err) {
+      setAiError(err.response?.data?.message || 'AI generation failed. Please try again.');
+    } finally { setAiLoading(false); }
+  };
+
+  const applyGenerated = () => {
+    if (!aiResult) return;
+    set('title', aiResult.title);
+    set('description', aiResult.description);
+    setAiResult(null);
+  };
+
+  const handleImprove = async () => {
+    if (!form.description.trim()) {
+      setAiError('Write something in the description field first, then click Improve.'); return;
+    }
+    setAiImproving(true); setAiError(''); setAiImproved(null);
+    try {
+      const res = await api.post('/ai/improve-listing', {
+        existingDescription: form.description,
+        location: form.location, roomType: form.roomType, price: form.price,
+      });
+      setAiImproved({ description: res.data.description });
+    } catch (err) {
+      setAiError(err.response?.data?.message || 'AI improve failed. Please try again.');
+    } finally { setAiImproving(false); }
+  };
+
+  const applyImproved = () => {
+    if (!aiImproved) return;
+    set('description', aiImproved.description);
+    setAiImproved(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    // Use FormData for multipart (image upload)
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, val]) => formData.append(key, val));
-    if (image) formData.append('image', image);
-
+    if (!form.title || !form.description || !form.location || !form.price || !form.contact) {
+      setError('Please fill in all required fields.'); return;
+    }
+    setSubmitting(true); setError(''); setSuccess('');
     try {
-      await api.post('/boardings', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setSuccess('Boarding added successfully! Redirecting...');
+      const formData = new FormData();
+      Object.entries(form).forEach(([k, v]) => { if (v !== '') formData.append(k, v); });
+      amenities.forEach(a => formData.append('amenities', a));
+      if (images.length > 0) images.forEach(img => formData.append('images', img));
+      await api.post('/boardings', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setSuccess('Listing created successfully!');
       setTimeout(() => navigate('/'), 1500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add boarding. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      setError(err.response?.data?.message || 'Failed to create listing. Please try again.');
+    } finally { setSubmitting(false); }
   };
 
   return (
-    <div>
-      <div className="page-header">
-        <div className="container">
-          <h1>🏠 Add New Boarding</h1>
-          <p>Fill in the details to list your boarding place</p>
+    <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #6d28d9 100%)', padding: '2.5rem 0 3.5rem' }}>
+        <div className="container" style={{ maxWidth: 820 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '0.4rem' }}>
+            <FiHome size={22} color="rgba(255,255,255,0.8)" />
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.8rem', fontWeight: 800, color: '#fff', margin: 0 }}>
+              Add Boarding Listing
+            </h1>
+          </div>
+          <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.9rem' }}>
+            Fill in the details below — or let AI write the perfect listing for you ✨
+          </p>
         </div>
       </div>
 
-      <div className="container pb-5" style={{ maxWidth: 760 }}>
-        {error && <div className="alert-custom alert-danger-custom mb-3">{error}</div>}
-        {success && <div className="alert-custom alert-success-custom mb-3">{success}</div>}
-
-        <div style={{ background:'#fff', borderRadius:'var(--radius-lg)', padding:'2rem', boxShadow:'var(--shadow)', border:'1px solid var(--border)' }}>
-          <form onSubmit={handleSubmit}>
-            {/* Title */}
-            <div className="mb-3">
-              <label className="form-label">Boarding Title *</label>
-              <input type="text" name="title" className="form-control" placeholder="e.g. Cozy Single Room near University of Peradeniya"
-                value={form.title} onChange={handleChange} required />
+      <div className="container" style={{ maxWidth: 820, marginTop: '-2rem', paddingBottom: '3rem' }}>
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 12, padding: '0.85rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+              <FiAlertCircle size={15} /> {error}
             </div>
-
-            {/* Description */}
-            <div className="mb-3">
-              <label className="form-label">Description *</label>
-              <textarea name="description" className="form-control" rows={4}
-                placeholder="Describe the boarding place, rules, nearby facilities..."
-                value={form.description} onChange={handleChange} required />
+          )}
+          {success && (
+            <div style={{ background: '#f0fdf4', color: '#059669', border: '1px solid #bbf7d0', borderRadius: 12, padding: '0.85rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+              <FiCheckCircle size={15} /> {success}
             </div>
+          )}
 
-            <div className="row g-3 mb-3">
-              {/* Price */}
+          {/* Section 1 – Basic Details */}
+          <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1rem' }}>
+            <SectionHead number="1" title="Basic Details" sub="Location, price, and room type" />
+            <div className="row g-3">
               <div className="col-md-6">
-                <label className="form-label"><FiDollarSign size={13} style={{marginRight:4}} />Monthly Price (LKR) *</label>
-                <input type="number" name="price" className="form-control" placeholder="e.g. 8000"
-                  value={form.price} onChange={handleChange} required min="0" />
+                <Field label="Location" required>
+                  <InputWrapper icon={<FiMapPin size={15} />} isFocused={focused === 'location'}>
+                    <input name="location" value={form.location} onChange={e => set('location', e.target.value)}
+                      onFocus={() => setFocused('location')} onBlur={() => setFocused('')}
+                      placeholder="e.g. Nugegoda, Colombo" style={inpBaseStyle} />
+                  </InputWrapper>
+                </Field>
               </div>
-              {/* Room Type */}
               <div className="col-md-6">
-                <label className="form-label">Room Type</label>
-                <select name="roomType" className="form-select" value={form.roomType} onChange={handleChange}>
-                  <option>Single</option>
-                  <option>Double</option>
-                  <option>Triple</option>
-                  <option>Annex</option>
-                  <option>Other</option>
-                </select>
+                <Field label="Monthly Price (LKR)" required>
+                  <InputWrapper icon={<FiDollarSign size={15} />} isFocused={focused === 'price'}>
+                    <input name="price" type="number" value={form.price} onChange={e => set('price', e.target.value)}
+                      onFocus={() => setFocused('price')} onBlur={() => setFocused('')}
+                      placeholder="e.g. 15000" style={inpBaseStyle} />
+                  </InputWrapper>
+                </Field>
               </div>
-            </div>
-
-            {/* Location */}
-            <div className="mb-3">
-              <label className="form-label"><FiMapPin size={13} style={{marginRight:4}} />Location / Address *</label>
-              <input type="text" name="location" className="form-control" placeholder="e.g. Asgiriya, Kandy"
-                value={form.location} onChange={handleChange} required />
-            </div>
-
-            <div className="row g-3 mb-3">
-              {/* Latitude */}
               <div className="col-md-6">
-                <label className="form-label">Latitude (Google Maps)</label>
-                <input type="number" name="lat" step="any" className="form-control" placeholder="e.g. 7.2906"
-                  value={form.lat} onChange={handleChange} />
+                <Field label="Room Type" required>
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {ROOM_TYPES.map(t => (
+                      <button type="button" key={t} onClick={() => set('roomType', t)}
+                        style={{ padding: '0.5rem 1rem', borderRadius: 8, border: `1.5px solid ${form.roomType === t ? '#2563eb' : '#e2e8f0'}`, background: form.roomType === t ? '#eff6ff' : '#f8fafc', color: form.roomType === t ? '#1d4ed8' : '#64748b', fontWeight: form.roomType === t ? 700 : 500, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)' }}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
               </div>
-              {/* Longitude */}
               <div className="col-md-6">
-                <label className="form-label">Longitude (Google Maps)</label>
-                <input type="number" name="lng" step="any" className="form-control" placeholder="e.g. 80.6337"
-                  value={form.lng} onChange={handleChange} />
+                <Field label="Suitable For">
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {GENDER_OPTS.map(g => (
+                      <button type="button" key={g} onClick={() => set('gender', g)}
+                        style={{ flex: 1, padding: '0.5rem', borderRadius: 8, border: `1.5px solid ${form.gender === g ? '#2563eb' : '#e2e8f0'}`, background: form.gender === g ? '#eff6ff' : '#f8fafc', color: form.gender === g ? '#1d4ed8' : '#64748b', fontWeight: form.gender === g ? 700 : 500, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)' }}>
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              </div>
+              <div className="col-12">
+                <Field label="Contact Number" required>
+                  <InputWrapper icon={<FiPhone size={15} />} isFocused={focused === 'contact'}>
+                    <input name="contact" value={form.contact} onChange={e => set('contact', e.target.value)}
+                      onFocus={() => setFocused('contact')} onBlur={() => setFocused('')}
+                      placeholder="e.g. 0771234567" style={inpBaseStyle} />
+                  </InputWrapper>
+                </Field>
               </div>
             </div>
+          </div>
 
-            <p style={{ fontSize:'0.8rem', color:'#94a3b8', marginTop:'-0.5rem', marginBottom:'1rem' }}>
-              💡 Get coordinates from <a href="https://maps.google.com" target="_blank" rel="noreferrer" style={{color:'#2563eb'}}>Google Maps</a> → right-click location → copy lat/lng
-            </p>
-
-            {/* Contact */}
-            <div className="mb-3">
-              <label className="form-label"><FiPhone size={13} style={{marginRight:4}} />Contact Number</label>
-              <input type="text" name="contact" className="form-control" placeholder="e.g. 077-1234567"
-                value={form.contact} onChange={handleChange} />
+          {/* Section 2 – Amenities */}
+          <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1rem' }}>
+            <SectionHead number="2" title="Amenities" sub="Select everything included in the rent" />
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              {AMENITY_OPTIONS.map(a => {
+                const active = amenities.includes(a);
+                return (
+                  <button type="button" key={a} onClick={() => toggleAmenity(a)}
+                    style={{ padding: '0.4rem 0.9rem', borderRadius: 20, border: `1.5px solid ${active ? '#2563eb' : '#e2e8f0'}`, background: active ? '#eff6ff' : '#f8fafc', color: active ? '#1d4ed8' : '#64748b', fontWeight: active ? 700 : 500, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    {active && <FiCheckCircle size={11} />}{a}
+                  </button>
+                );
+              })}
             </div>
-
-            {/* Amenities */}
-            <div className="mb-3">
-              <label className="form-label">Amenities (comma-separated)</label>
-              <input type="text" name="amenities" className="form-control"
-                placeholder="e.g. WiFi, Parking, Water, Meals"
-                value={form.amenities} onChange={handleChange} />
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <input value={customAmenity} onChange={e => setCustomAmenity(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomAmenity(); } }}
+                placeholder="Add custom amenity…"
+                style={{ flex: 1, border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0.6rem 1rem', fontSize: '0.875rem', fontFamily: 'var(--font-body)', outline: 'none', color: '#0f172a' }} />
+              <button type="button" onClick={addCustomAmenity}
+                style={{ background: '#f1f5f9', color: '#374151', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0.6rem 1rem', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: 'var(--font-body)' }}>
+                <FiPlus size={14} /> Add
+              </button>
             </div>
+            {amenities.filter(a => !AMENITY_OPTIONS.includes(a)).length > 0 && (
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.7rem' }}>
+                {amenities.filter(a => !AMENITY_OPTIONS.includes(a)).map(a => (
+                  <span key={a} style={{ background: '#fdf4ff', color: '#7c3aed', border: '1px solid #e9d5ff', borderRadius: 20, padding: '0.3rem 0.8rem', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {a}
+                    <button type="button" onClick={() => toggleAmenity(a)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', padding: 0, display: 'flex' }}>
+                      <FiX size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Image Upload */}
-            <div className="mb-4">
-              <label className="form-label"><FiUpload size={13} style={{marginRight:4}} />Upload Image</label>
-              <input type="file" className="form-control" accept="image/*" onChange={handleImageChange} />
-              {preview && (
-                <div className="mt-2">
-                  <img src={preview} alt="Preview" style={{ width:'100%', maxHeight:220, objectFit:'cover', borderRadius:10 }} />
+          {/* Section 3 – Title & Description */}
+          <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1rem' }}>
+            <SectionHead number="3" title="Title & Description" sub="Write your own or generate with AI" />
+            {aiError && (
+              <div style={{ background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FiAlertCircle size={14} /> {aiError}
+              </div>
+            )}
+            <div style={{ background: 'linear-gradient(135deg, rgba(109,40,217,0.03), rgba(37,99,235,0.03))', border: '1.5px dashed rgba(109,40,217,0.2)', borderRadius: 14, padding: '1.2rem 1.3rem', marginBottom: '1.4rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.8rem', marginBottom: '0.5rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                    <FiZap size={15} color="#6d28d9" />
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', color: '#0f172a' }}>AI Listing Writer</span>
+                    <span style={{ background: 'linear-gradient(135deg,#6d28d9,#2563eb)', color: '#fff', fontSize: '0.62rem', fontWeight: 800, padding: '0.1rem 0.5rem', borderRadius: 20 }}>POWERED BY CLAUDE</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Fill in Section 1 first, then click Generate.</p>
                 </div>
-              )}
+                <AIButton onClick={handleGenerate} loading={aiLoading} label="Generate listing" icon={<FiZap size={14} />} variant="primary" />
+              </div>
+              {aiResult && <AIResultCard title={aiResult.title} description={aiResult.description} onApply={applyGenerated} onRegenerate={handleGenerate} loading={aiLoading} />}
             </div>
 
-            {/* Submit */}
-            <button type="submit" className="btn-primary-custom w-100 justify-content-center" disabled={loading}
-              style={{ padding:'0.8rem', fontSize:'1rem' }}>
-              {loading ? (
-                <><span className="spinner-border spinner-border-sm me-2" />Adding Boarding...</>
-              ) : '🏠 Add Boarding'}
+            <Field label="Listing Title" required>
+              <InputWrapper icon={<FiHome size={15} />} isFocused={focused === 'title'}>
+                <input name="title" value={form.title} onChange={e => set('title', e.target.value)}
+                  onFocus={() => setFocused('title')} onBlur={() => setFocused('')}
+                  placeholder="e.g. Cozy Single Room Near Moratuwa University" style={inpBaseStyle} />
+              </InputWrapper>
+            </Field>
+
+            <Field label="Description" required badge="AI can improve this">
+              <div style={{ border: `1.5px solid ${focused === 'desc' ? '#2563eb' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden' }}>
+                <textarea value={form.description} onChange={e => set('description', e.target.value)}
+                  onFocus={() => setFocused('desc')} onBlur={() => setFocused('')}
+                  placeholder="Describe your boarding place..." rows={5}
+                  style={{ width: '100%', border: 'none', outline: 'none', padding: '0.85rem 1rem', fontSize: '0.9rem', fontFamily: 'var(--font-body)', color: '#0f172a', resize: 'vertical', background: 'transparent' }} />
+                <div style={{ borderTop: '1px solid #f1f5f9', padding: '0.6rem 0.85rem', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{form.description.length} characters</span>
+                  <AIButton onClick={handleImprove} loading={aiImproving} label="✨ Improve with AI" variant="secondary" />
+                </div>
+              </div>
+              {aiImproved && <AIResultCard title={null} description={aiImproved.description} onApply={applyImproved} onRegenerate={handleImprove} loading={aiImproving} />}
+            </Field>
+          </div>
+
+          {/* Section 4 – Photos & Map */}
+          <div style={{ background: '#fff', borderRadius: 20, boxShadow: '0 4px 24px rgba(15,23,42,0.08)', padding: '2rem', marginBottom: '1.5rem' }}>
+            <SectionHead number="4" title="Photo & Map Location" sub="Optional but recommended" />
+
+            {/* Photos */}
+            <Field label={`Photos (${images.length}/8)`} hint="First photo will be the cover image. Up to 8 photos allowed.">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px,1fr))', gap: '0.6rem', marginBottom: '0.6rem' }}>
+                {imagePreviews.map((preview, idx) => (
+                  <div key={idx} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', height: 100 }}>
+                    <img src={preview} alt={`Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {idx === 0 && (
+                      <div style={{ position: 'absolute', top: 4, left: 4, background: '#2563eb', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 20 }}>COVER</div>
+                    )}
+                    <button type="button" onClick={() => removeImage(idx)}
+                      style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
+                      <FiX size={11} />
+                    </button>
+                  </div>
+                ))}
+                {images.length < 8 && (
+                  <label style={{ cursor: 'pointer' }}>
+                    <div style={{ border: '2px dashed #e2e8f0', borderRadius: 10, height: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', gap: '0.3rem' }}>
+                      <FiUpload size={20} color="#94a3b8" />
+                      <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>Add Photo</span>
+                    </div>
+                    <input type="file" accept="image/*" multiple onChange={handleImages} style={{ display: 'none' }} />
+                  </label>
+                )}
+              </div>
+            </Field>
+
+            {/* Map Picker */}
+            <Field
+              label="Pin Location on Map"
+              hint="Click on the map to set the exact location of your boarding place."
+            >
+              <MapPicker
+                lat={form.lat}
+                lng={form.lng}
+                onChange={handleMapChange}
+              />
+            </Field>
+          </div>
+
+          {/* Submit */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem' }}>
+            <button type="button" onClick={() => navigate(-1)}
+              style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 12, padding: '0.85rem 1.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+              Cancel
             </button>
-          </form>
-        </div>
+            <button type="submit" disabled={submitting}
+              style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', color: '#fff', border: 'none', borderRadius: 12, padding: '0.85rem 2.2rem', fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1, display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-body)' }}>
+              {submitting ? 'Publishing...' : <><FiSave size={15} /> Publish Listing</>}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

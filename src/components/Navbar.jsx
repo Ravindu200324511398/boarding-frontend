@@ -1,121 +1,158 @@
-// ============================================
-// Navbar Component
-// ============================================
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency, CURRENCIES } from '../context/CurrencyContext';
 import {
-  FiHome, FiPlusCircle, FiHeart, FiMap,
-  FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX
+  FiHome, FiPlusCircle, FiHeart, FiMap, FiBell, FiMessageSquare,
+  FiBarChart2, FiLogIn, FiLogOut, FiUserPlus, FiMenu, FiX,
+  FiShield, FiUser, FiChevronDown, FiCheck, FiMoon, FiSun, FiGrid
 } from 'react-icons/fi';
+
+const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
 const Navbar = () => {
   const { isAuth, user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const [open, setOpen] = useState(false);
+  
+  // Dropdown states
+  const [showInquiries, setShowInquiries] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    setOpen(false);
-  };
+  const handleLogout = () => { logout(); navigate('/login'); };
+  const isActive = (path) => location.pathname === path;
 
-  const isActive = (path) => location.pathname === path ? 'active' : '';
+  // Modern Nav Link Style
+  const navLinkStyle = (path) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '0.6rem 1rem',
+    borderRadius: '12px',
+    textDecoration: 'none',
+    fontSize: '0.9rem',
+    fontWeight: 600,
+    transition: '0.2s all ease',
+    color: isActive(path) ? '#10b981' : '#475569',
+    background: isActive(path) ? '#f0fdf4' : 'transparent',
+  });
 
   return (
-    <nav className="bf-navbar">
+    <nav style={{
+      background: '#ffffff',
+      borderBottom: '1px solid #f1f5f9',
+      position: 'sticky', top: 0, zIndex: 1000,
+      padding: '0.7rem 0'
+    }}>
       <div className="container d-flex align-items-center justify-content-between">
-        {/* Brand */}
-        <Link to="/" className="brand">
-          🏠 Boarding<span>Finder</span>
+        
+        {/* Left: Brand */}
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '1.6rem' }}>🏠</span>
+          <span style={{ fontFamily: 'Georgia, serif', fontWeight: 800, fontSize: '1.4rem', color: '#0f172a' }}>
+            Boarding<span style={{ color: '#10b981' }}>Finder</span>
+          </span>
         </Link>
 
-        {/* Desktop Menu */}
-        <div className="d-none d-md-flex align-items-center gap-1">
-          <Link to="/" className={`nav-link ${isActive('/')}`}>
-            <FiHome style={{marginRight:4}} />Home
-          </Link>
-          <Link to="/map" className={`nav-link ${isActive('/map')}`}>
-            <FiMap style={{marginRight:4}} />Map
-          </Link>
-
-          {isAuth ? (
-            <>
-              <Link to="/add" className={`nav-link ${isActive('/add')}`}>
-                <FiPlusCircle style={{marginRight:4}} />Add Boarding
-              </Link>
-              <Link to="/favorites" className={`nav-link ${isActive('/favorites')}`}>
-                <FiHeart style={{marginRight:4}} />Favorites
-              </Link>
-              <div className="d-flex align-items-center gap-2 ms-2">
-                <span style={{ fontSize:'0.85rem', color:'#64748b', fontWeight:500 }}>
-                  Hi, {user?.name?.split(' ')[0]}
-                </span>
-                <button onClick={handleLogout} className="btn-outline-custom" style={{padding:'0.45rem 1rem', fontSize:'0.875rem'}}>
-                  <FiLogOut style={{marginRight:4}} />Logout
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className={`nav-link ${isActive('/login')}`}>
-                <FiLogIn style={{marginRight:4}} />Login
-              </Link>
-              <Link to="/register">
-                <button className="btn-primary-custom ms-1" style={{padding:'0.45rem 1.1rem', fontSize:'0.875rem'}}>
-                  <FiUserPlus style={{marginRight:4}} />Register
-                </button>
-              </Link>
-            </>
+        {/* Center: Essential Navigation */}
+        <div className="d-none d-lg-flex align-items-center gap-2">
+          <Link to="/" style={navLinkStyle('/')}><FiHome size={18}/>Home</Link>
+          <Link to="/map" style={navLinkStyle('/map')}><FiMap size={18}/>Map</Link>
+          <Link to="/compare" style={navLinkStyle('/compare')}><FiBarChart2 size={18}/>Compare</Link>
+          
+          {isAuth && (
+            <div style={{ position: 'relative' }} 
+                 onMouseEnter={() => setShowInquiries(true)} 
+                 onMouseLeave={() => setShowInquiries(false)}>
+              <button style={{
+                ...navLinkStyle('/inquiries'),
+                border: 'none', background: (isActive('/inquiries') || isActive('/my-inquiries')) ? '#f0fdf4' : 'transparent',
+                cursor: 'pointer'
+              }}>
+                <FiGrid size={18}/> My Activity <FiChevronDown size={14}/>
+              </button>
+              
+              {showInquiries && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, background: '#fff',
+                  border: '1px solid #f1f5f9', borderRadius: '14px', padding: '0.5rem',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.08)', minWidth: '200px', animation: 'navFadeIn 0.2s ease'
+                }}>
+                  <Link to="/inquiries" style={navLinkStyle('/inquiries')}><FiBell size={16}/> Received Inquiries</Link>
+                  <Link to="/my-inquiries" style={navLinkStyle('/my-inquiries')}><FiMessageSquare size={16}/> Sent Requests</Link>
+                  <Link to="/favorites" style={navLinkStyle('/favorites')}><FiHeart size={16}/> Saved Places</Link>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Mobile Toggle */}
-        <button
-          className="d-md-none"
-          onClick={() => setOpen(!open)}
-          style={{ background:'none', border:'none', fontSize:'1.5rem', cursor:'pointer', color:'#0f172a' }}
-        >
-          {open ? <FiX /> : <FiMenu />}
-        </button>
-      </div>
-
-      {/* Mobile Dropdown */}
-      {open && (
-        <div className="container mt-2 d-md-none" style={{ paddingBottom:'1rem', borderTop:'1px solid #e2e8f0', paddingTop:'1rem' }}>
-          <div className="d-flex flex-column gap-1">
-            <Link to="/" className={`nav-link ${isActive('/')}`} onClick={() => setOpen(false)}>
-              <FiHome style={{marginRight:6}} />Home
-            </Link>
-            <Link to="/map" className={`nav-link ${isActive('/map')}`} onClick={() => setOpen(false)}>
-              <FiMap style={{marginRight:6}} />Map
-            </Link>
-            {isAuth ? (
-              <>
-                <Link to="/add" className={`nav-link ${isActive('/add')}`} onClick={() => setOpen(false)}>
-                  <FiPlusCircle style={{marginRight:6}} />Add Boarding
-                </Link>
-                <Link to="/favorites" className={`nav-link ${isActive('/favorites')}`} onClick={() => setOpen(false)}>
-                  <FiHeart style={{marginRight:6}} />Favorites
-                </Link>
-                <button onClick={handleLogout} className="nav-link text-start" style={{ background:'none', border:'none', color:'#ef4444', fontWeight:500, cursor:'pointer' }}>
-                  <FiLogOut style={{marginRight:6}} />Logout
+        {/* Right: Actions */}
+        <div className="d-flex align-items-center gap-3">
+          {isAuth ? (
+            <>
+              <Link to="/add" style={{ textDecoration: 'none' }}>
+                <button style={{
+                  background: '#10b981', color: '#fff', border: 'none',
+                  borderRadius: '12px', padding: '0.6rem 1.2rem', fontSize: '0.85rem',
+                  fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer'
+                }}>
+                  <FiPlusCircle size={16}/> List Property
                 </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" className={`nav-link ${isActive('/login')}`} onClick={() => setOpen(false)}>
-                  <FiLogIn style={{marginRight:6}} />Login
-                </Link>
-                <Link to="/register" className={`nav-link ${isActive('/register')}`} onClick={() => setOpen(false)}>
-                  <FiUserPlus style={{marginRight:6}} />Register
-                </Link>
-              </>
-            )}
-          </div>
+              </Link>
+
+              <div style={{ position: 'relative' }}
+                   onMouseEnter={() => setShowUserMenu(true)}
+                   onMouseLeave={() => setShowUserMenu(false)}>
+                <div style={{ 
+                  display: 'flex', alignItems: 'center', gap: '0.6rem', 
+                  padding: '0.4rem 0.8rem', borderRadius: '12px', 
+                  background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer' 
+                }}>
+                  <div style={{ width: 30, height: 30, borderRadius: '10px', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', overflow: 'hidden' }}>
+                    {user?.avatar ? <img src={`${AVATAR_BASE}${user.avatar}`} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FiUser />}
+                  </div>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e293b' }}>{user?.name?.split(' ')[0]}</span>
+                </div>
+
+                {showUserMenu && (
+                  <div style={{
+                    position: 'absolute', top: '100%', right: 0, background: '#fff',
+                    border: '1px solid #f1f5f9', borderRadius: '14px', padding: '0.5rem',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.08)', minWidth: '180px'
+                  }}>
+                    {user?.isAdmin && (
+                      <Link to="/admin/dashboard" style={navLinkStyle('/admin/dashboard')}><FiShield size={16}/> Admin Panel</Link>
+                    )}
+                    <Link to="/profile" style={navLinkStyle('/profile')}><FiUser size={16}/> Profile Settings</Link>
+                    <hr style={{ margin: '0.5rem', opacity: 0.1 }} />
+                    <button onClick={handleLogout} style={{
+                      ...navLinkStyle(''), color: '#ef4444', width: '100%', border: 'none', background: 'transparent', cursor: 'pointer'
+                    }}><FiLogOut size={16}/> Sign Out</button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="d-flex gap-2">
+              <Link to="/login" style={{ textDecoration: 'none', color: '#475569', fontWeight: 700, fontSize: '0.9rem', padding: '0.6rem 1rem' }}>Sign In</Link>
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <button style={{ 
+                  background: '#10b981', color: '#fff', border: 'none', 
+                  borderRadius: '12px', padding: '0.6rem 1.3rem', fontSize: '0.85rem', 
+                  fontWeight: 700, cursor: 'pointer' 
+                }}>Get Started</button>
+              </Link>
+            </div>
+          )}
+          
+          <button onClick={toggleTheme} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.5rem', cursor: 'pointer', color: '#64748b' }}>
+            {isDark ? <FiSun size={18}/> : <FiMoon size={18}/>}
+          </button>
         </div>
-      )}
+      </div>
     </nav>
   );
 };
