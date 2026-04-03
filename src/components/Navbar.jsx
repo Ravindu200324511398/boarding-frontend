@@ -11,20 +11,82 @@ import {
 
 const AVATAR_BASE = 'http://localhost:5001/uploads/avatars/';
 
+// --- Added Currency Selector Component ---
+const CurrencySelector = () => {
+  const { currency, changeCurrency } = useCurrency();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '0.4rem',
+          background: '#f8fafc', border: '1px solid #e2e8f0',
+          borderRadius: '12px', padding: '0.5rem 0.8rem',
+          cursor: 'pointer', fontSize: '0.85rem', fontWeight: 700, color: '#334155'
+        }}
+      >
+        <span>{currency.flag}</span>
+        <span>{currency.code}</span>
+        <FiChevronDown size={14} style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: '0.2s' }}/>
+      </button>
+
+      {isOpen && (
+        <div style={{
+          position: 'absolute', top: '115%', right: 0,
+          background: '#fff', border: '1px solid #f1f5f9',
+          borderRadius: '14px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          minWidth: '160px', zIndex: 1100, padding: '0.4rem', overflow: 'hidden'
+        }}>
+          {CURRENCIES.map((c) => (
+            <button
+              key={c.code}
+              onClick={() => { changeCurrency(c.code); setIsOpen(false); }}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem',
+                padding: '0.6rem 0.8rem', border: 'none', borderRadius: '10px',
+                background: currency.code === c.code ? '#f0fdf4' : 'transparent',
+                color: currency.code === c.code ? '#10b981' : '#475569',
+                fontSize: '0.85rem', fontWeight: currency.code === c.code ? 800 : 500,
+                textAlign: 'left', cursor: 'pointer', transition: '0.2s'
+              }}
+            >
+              <span style={{ fontSize: '1.1rem' }}>{c.flag}</span>
+              <span>{c.code}</span>
+              {currency.code === c.code && <FiCheck style={{ marginLeft: 'auto' }} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Navbar = () => {
   const { isAuth, user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Dropdown states
   const [showInquiries, setShowInquiries] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/login'); };
   const isActive = (path) => location.pathname === path;
 
-  // Modern Nav Link Style
   const navLinkStyle = (path) => ({
     display: 'flex',
     alignItems: 'center',
@@ -91,6 +153,10 @@ const Navbar = () => {
 
         {/* Right: Actions */}
         <div className="d-flex align-items-center gap-3">
+          
+          {/* --- Placement of Currency Selector --- */}
+          <CurrencySelector />
+
           {isAuth ? (
             <>
               <Link to="/add" style={{ textDecoration: 'none' }}>
