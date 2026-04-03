@@ -4,6 +4,116 @@ import { FiLock, FiEye, FiEyeOff, FiCheckCircle } from 'react-icons/fi';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
+const CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%      { transform: translate(40px,-50px) scale(1.07); }
+    66%      { transform: translate(-25px,30px) scale(0.95); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmerBtn {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+  @keyframes successPop {
+    0%   { transform: scale(0.85); opacity: 0; }
+    70%  { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .rp-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    width: 100%; max-width: 440px;
+    backdrop-filter: blur(16px);
+    animation: fadeUp 0.5s ease;
+    position: relative; overflow: hidden;
+  }
+
+  .rp-submit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #00d4aa 0%, #2de2e6 40%, #0ea5e9 80%);
+    background-size: 300% 300%;
+    color: #fff; border: none; border-radius: 13px;
+    padding: 0.9rem;
+    font-family: 'Cabinet Grotesk', sans-serif;
+    font-weight: 800; font-size: 0.95rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    animation: shimmerBtn 4s linear infinite;
+    box-shadow: 0 6px 24px rgba(0,212,170,0.35);
+    transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .rp-submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 12px 36px rgba(0,212,170,0.5);
+  }
+  .rp-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+  .rp-inp-wrap {
+    display: flex; align-items: center;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 12px; overflow: hidden;
+    background: rgba(255,255,255,0.04);
+    transition: all 0.2s;
+  }
+  .rp-inp-wrap:focus-within {
+    border-color: rgba(0,212,170,0.55);
+    background: rgba(0,212,170,0.04);
+    box-shadow: 0 0 0 3px rgba(0,212,170,0.1);
+  }
+  .rp-inp-wrap.err { border-color: rgba(248,113,113,0.5); }
+
+  .rp-inp {
+    border: none; outline: none; flex: 1;
+    padding: 0.75rem 1rem; font-size: 0.95rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: rgba(220,233,255,0.9); background: transparent;
+  }
+  .rp-inp::placeholder { color: rgba(220,233,255,0.25); }
+
+  .rp-inp-icon {
+    padding: 0 0.85rem;
+    color: rgba(0,212,170,0.65);
+    background: rgba(255,255,255,0.02);
+    align-self: stretch; display: flex; align-items: center;
+    border-right: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .rp-label {
+    display: block; font-size: 0.78rem; font-weight: 700;
+    color: rgba(220,233,255,0.45); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-bottom: 0.5rem;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  .strength-bar-bg {
+    height: 4px; background: rgba(255,255,255,0.08);
+    border-radius: 4px; overflow: hidden; margin-top: 0.5rem;
+  }
+
+  .success-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px; padding: 3rem 2rem;
+    max-width: 420px; width: 100%;
+    text-align: center; backdrop-filter: blur(16px);
+    animation: successPop 0.5s ease forwards;
+  }
+
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 100px rgba(6,15,40,0.95) inset !important;
+    -webkit-text-fill-color: rgba(220,233,255,0.9) !important;
+  }
+`;
+
 const ResetPassword = () => {
   const { token } = useParams();
   const navigate = useNavigate();
@@ -16,11 +126,11 @@ const ResetPassword = () => {
   const [success, setSuccess] = useState(false);
 
   const strength = () => {
-    if (!password) return { level: 0, label: '', color: '#e2e8f0' };
+    if (!password) return { level: 0, label: '', color: 'rgba(255,255,255,0.1)' };
     if (password.length < 6) return { level: 1, label: 'Too short', color: '#ef4444' };
     if (password.length < 8) return { level: 2, label: 'Weak', color: '#f59e0b' };
-    if (/[A-Z]/.test(password) && /[0-9]/.test(password)) return { level: 4, label: 'Strong', color: '#059669' };
-    return { level: 3, label: 'Good', color: '#2563eb' };
+    if (/[A-Z]/.test(password) && /[0-9]/.test(password)) return { level: 4, label: 'Strong', color: '#00d4aa' };
+    return { level: 3, label: 'Good', color: '#0ea5e9' };
   };
   const str = strength();
 
@@ -39,61 +149,69 @@ const ResetPassword = () => {
     } finally { setLoading(false); }
   };
 
+  const orbs = [
+    { w: 500, h: 500, color: '#0ea5e940', top: '-120px', left: '-120px', delay: '0s' },
+    { w: 450, h: 450, color: '#00d4aa25', bottom: '-100px', right: '-100px', delay: '-7s' },
+    { w: 350, h: 350, color: '#06b6d428', top: '50%', left: '40%', delay: '-12s' },
+  ];
+
   if (success) return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div style={{ textAlign: 'center', background: '#fff', borderRadius: 20, padding: '3rem 2rem', maxWidth: 420, width: '100%', boxShadow: '0 8px 40px rgba(15,23,42,0.1)' }}>
-        <FiCheckCircle size={64} color="#059669" style={{ marginBottom: '1rem' }} />
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>Password Reset!</h2>
-        <p style={{ color: '#64748b' }}>Your password has been updated. Redirecting you home...</p>
+    <div style={{ minHeight: '100vh', background: '#060f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative', overflow: 'hidden' }}>
+      <style>{CSS}</style>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        {orbs.map((o, i) => <div key={i} style={{ position: 'absolute', borderRadius: '50%', width: o.w, height: o.h, background: `radial-gradient(circle, ${o.color}, transparent 70%)`, filter: 'blur(70px)', top: o.top, left: o.left, right: o.right, bottom: o.bottom, animation: `orbFloat 14s ease-in-out infinite`, animationDelay: o.delay }} />)}
+      </div>
+      <div className="success-card" style={{ zIndex: 2 }}>
+        <div style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #00d4aa, #0ea5e9)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.2rem', boxShadow: '0 10px 30px rgba(0,212,170,0.4)' }}>
+          <FiCheckCircle size={36} color="#fff" />
+        </div>
+        <h2 style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, color: '#dce9ff', marginBottom: '0.5rem' }}>Password Reset!</h2>
+        <p style={{ color: 'rgba(220,233,255,0.45)' }}>Your password has been updated. Redirecting you home...</p>
+        <div style={{ width: 40, height: 3, background: 'linear-gradient(135deg,#00d4aa,#0ea5e9)', borderRadius: 3, margin: '1.2rem auto 0' }} />
       </div>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
-      <div style={{ background: '#fff', borderRadius: 20, padding: '2.5rem 2rem', width: '100%', maxWidth: 440, boxShadow: '0 8px 40px rgba(15,23,42,0.1)' }}>
+    <div style={{ minHeight: '100vh', background: '#060f2a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative', overflow: 'hidden' }}>
+      <style>{CSS}</style>
+
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        {orbs.map((o, i) => <div key={i} style={{ position: 'absolute', borderRadius: '50%', width: o.w, height: o.h, background: `radial-gradient(circle, ${o.color}, transparent 70%)`, filter: 'blur(70px)', top: o.top, left: o.left, right: o.right, bottom: o.bottom, animation: `orbFloat 14s ease-in-out infinite`, animationDelay: o.delay }} />)}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+      </div>
+
+      <div className="rp-card" style={{ zIndex: 2 }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 160, height: 160, background: 'radial-gradient(circle, rgba(0,212,170,0.1), transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: 160, height: 160, background: 'radial-gradient(circle, rgba(14,165,233,0.08), transparent 70%)', pointerEvents: 'none' }} />
 
         <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
-          <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #2563eb, #7c3aed)', borderRadius: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
+          <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #00d4aa, #0ea5e9)', borderRadius: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', boxShadow: '0 8px 24px rgba(0,212,170,0.35)' }}>
             <FiLock size={28} color="#fff" />
           </div>
-          <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.7rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.4rem' }}>Set New Password</h2>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', margin: 0 }}>Choose a strong password for your account.</p>
+          <h2 style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontSize: '1.7rem', fontWeight: 800, color: '#dce9ff', marginBottom: '0.4rem' }}>Set New Password</h2>
+          <p style={{ color: 'rgba(220,233,255,0.45)', fontSize: '0.9rem', margin: 0 }}>Choose a strong password for your account.</p>
         </div>
 
         {error && (
-          <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '0.85rem 1rem', borderRadius: 10, fontSize: '0.875rem', marginBottom: '1.2rem', border: '1px solid #fecaca' }}>
+          <div style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', padding: '0.85rem 1rem', borderRadius: 12, fontSize: '0.875rem', marginBottom: '1.2rem', border: '1px solid rgba(239,68,68,0.2)' }}>
             ⚠️ {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* New Password */}
           <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>New Password</label>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: 10, overflow: 'hidden' }}
-              onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
-              onBlurCapture={e => e.currentTarget.style.borderColor = '#e2e8f0'}>
-              <span style={{ padding: '0 0.85rem', color: '#94a3b8', background: '#f8fafc', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #e2e8f0' }}>
-                <FiLock size={16} />
-              </span>
-              <input
-                type={showPw ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Min. 6 characters"
-                required
-                style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }}
-              />
-              <button type="button" onClick={() => setShowPw(!showPw)}
-                style={{ background: 'none', border: 'none', padding: '0 0.85rem', cursor: 'pointer', color: '#94a3b8' }}>
+            <label className="rp-label">New Password</label>
+            <div className="rp-inp-wrap">
+              <span className="rp-inp-icon"><FiLock size={16} /></span>
+              <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min. 6 characters" required className="rp-inp" />
+              <button type="button" onClick={() => setShowPw(!showPw)} style={{ background: 'none', border: 'none', padding: '0 0.85rem', cursor: 'pointer', color: 'rgba(220,233,255,0.3)' }}>
                 {showPw ? <FiEyeOff size={16} /> : <FiEye size={16} />}
               </button>
             </div>
-            {/* Strength bar */}
             {password && (
-              <div style={{ marginTop: '0.5rem' }}>
-                <div style={{ height: 4, background: '#f1f5f9', borderRadius: 4, overflow: 'hidden' }}>
+              <div>
+                <div className="strength-bar-bg">
                   <div style={{ height: '100%', width: `${str.level * 25}%`, background: str.color, transition: 'width 0.3s, background 0.3s', borderRadius: 4 }} />
                 </div>
                 <div style={{ fontSize: '0.75rem', color: str.color, fontWeight: 600, marginTop: '0.25rem' }}>{str.label}</div>
@@ -101,40 +219,23 @@ const ResetPassword = () => {
             )}
           </div>
 
-          {/* Confirm Password */}
           <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#374151', marginBottom: '0.5rem' }}>Confirm Password</label>
-            <div style={{ display: 'flex', alignItems: 'center', border: `1.5px solid ${confirm && confirm !== password ? '#ef4444' : '#e2e8f0'}`, borderRadius: 10, overflow: 'hidden' }}
-              onFocusCapture={e => e.currentTarget.style.borderColor = '#2563eb'}
-              onBlurCapture={e => e.currentTarget.style.borderColor = confirm && confirm !== password ? '#ef4444' : '#e2e8f0'}>
-              <span style={{ padding: '0 0.85rem', color: '#94a3b8', background: '#f8fafc', alignSelf: 'stretch', display: 'flex', alignItems: 'center', borderRight: '1px solid #e2e8f0' }}>
-                <FiLock size={16} />
-              </span>
-              <input
-                type={showPw ? 'text' : 'password'}
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                placeholder="Repeat new password"
-                required
-                style={{ border: 'none', outline: 'none', flex: 1, padding: '0.75rem 1rem', fontSize: '0.95rem', fontFamily: 'var(--font-body)', background: 'transparent' }}
-              />
+            <label className="rp-label">Confirm Password</label>
+            <div className={`rp-inp-wrap${confirm && confirm !== password ? ' err' : ''}`}>
+              <span className="rp-inp-icon"><FiLock size={16} /></span>
+              <input type={showPw ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat new password" required className="rp-inp" />
             </div>
-            {confirm && confirm !== password && (
-              <div style={{ fontSize: '0.78rem', color: '#ef4444', marginTop: '0.3rem' }}>⚠ Passwords don't match</div>
-            )}
-            {confirm && confirm === password && (
-              <div style={{ fontSize: '0.78rem', color: '#059669', marginTop: '0.3rem' }}>✓ Passwords match</div>
-            )}
+            {confirm && confirm !== password && <div style={{ fontSize: '0.78rem', color: '#f87171', marginTop: '0.3rem' }}>⚠ Passwords don't match</div>}
+            {confirm && confirm === password && <div style={{ fontSize: '0.78rem', color: '#00d4aa', marginTop: '0.3rem' }}>✓ Passwords match</div>}
           </div>
 
-          <button type="submit" disabled={loading}
-            style={{ width: '100%', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.85rem', fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: '0.95rem', cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: loading ? 0.7 : 1 }}>
+          <button type="submit" disabled={loading} className="rp-submit-btn">
             {loading ? <><span className="spinner-border spinner-border-sm me-2" />Resetting...</> : <><FiLock size={15} />Reset Password</>}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8', marginTop: '1.5rem', marginBottom: 0 }}>
-          <Link to="/login" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'none' }}>← Back to Login</Link>
+        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(220,233,255,0.35)', marginTop: '1.5rem', marginBottom: 0 }}>
+          <Link to="/login" style={{ color: '#00d4aa', fontWeight: 700, textDecoration: 'none' }}>← Back to Login</Link>
         </p>
       </div>
     </div>
