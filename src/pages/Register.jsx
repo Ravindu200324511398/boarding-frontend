@@ -58,6 +58,7 @@ const ParticleCanvas = () => {
   return <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }} />;
 };
 
+// ── LEFT PANEL: redesigned ────────────────────────────────────────────────────
 const HouseCard3D = () => {
   const cardRef = useRef(null);
   const wrapRef = useRef(null);
@@ -79,43 +80,73 @@ const HouseCard3D = () => {
   return (
     <div ref={wrapRef} style={{ perspective: '1000px' }} onMouseMove={handleMove} onMouseLeave={handleLeave}>
       <div ref={cardRef} style={{
-        width: 260, height: 310,
-        borderRadius: 24,
-        background: 'linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
-        border: '1px solid rgba(255,255,255,0.12)',
+        width: 320,
+        borderRadius: 26,
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03))',
+        border: '1px solid rgba(255,255,255,0.13)',
         backdropFilter: 'blur(20px)',
         boxShadow: '0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(14,165,233,0.2)',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: '28px',
+        padding: '36px 32px 32px',
         animation: 'houseFloat 6s ease-in-out infinite',
         transformStyle: 'preserve-3d',
         cursor: 'pointer',
         transition: 'transform 0.12s ease',
       }}>
-        <div style={{ fontSize: '4.5rem', marginBottom: 12, filter: 'drop-shadow(0 8px 24px rgba(14,165,233,0.6))', animation: 'emojiGlow 4s ease-in-out infinite' }}>🏡</div>
+        {/* Big emoji */}
+        <div style={{
+          fontSize: '5.8rem',
+          marginBottom: 14,
+          filter: 'drop-shadow(0 12px 32px rgba(14,165,233,0.6))',
+          animation: 'emojiGlow 4s ease-in-out infinite',
+          lineHeight: 1,
+        }}>🏡</div>
+
+        {/* Card title */}
         <h3 style={{
-          fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1.05rem',
-          textAlign: 'center', marginBottom: 8,
-          background: 'linear-gradient(135deg, #0ea5e9, #06b6d4)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+          fontFamily: "'Cabinet Grotesk', sans-serif",
+          fontWeight: 800,
+          fontSize: '1.25rem',
+          textAlign: 'center',
+          marginBottom: 8,
+          background: 'linear-gradient(135deg, #0ea5e9, #2de2e6)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
         }}>Join Our Community</h3>
-        <p style={{ fontSize: '0.77rem', color: 'rgba(240,244,255,0.5)', textAlign: 'center', lineHeight: 1.55 }}>
+
+        {/* Card sub */}
+        <p style={{
+          fontSize: '0.85rem',
+          color: 'rgba(240,244,255,0.45)',
+          textAlign: 'center',
+          lineHeight: 1.6,
+          marginBottom: 26,
+        }}>
           Find perfect boarding near your campus
         </p>
-        <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+
+        {/* Stats row — bigger */}
+        <div style={{ display: 'flex', gap: 14, width: '100%' }}>
           {[['2K+', 'Listings'], ['5★', 'Rated'], ['Free', 'Always']].map(([n, l]) => (
             <div key={l} style={{
-              textAlign: 'center', padding: '8px 10px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 10,
+              flex: 1,
+              textAlign: 'center',
+              padding: '14px 8px',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.09)',
+              borderRadius: 14,
             }}>
               <div style={{
-                fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '0.95rem',
+                fontFamily: "'Cabinet Grotesk', sans-serif",
+                fontWeight: 800,
+                fontSize: '1.2rem',
                 background: 'linear-gradient(135deg, #00d4aa, #2de2e6)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
               }}>{n}</div>
-              <div style={{ fontSize: '0.65rem', color: 'rgba(240,244,255,0.45)', marginTop: 1 }}>{l}</div>
+              <div style={{ fontSize: '0.68rem', color: 'rgba(240,244,255,0.4)', marginTop: 3, fontWeight: 600, letterSpacing: '0.04em' }}>{l}</div>
             </div>
           ))}
         </div>
@@ -123,6 +154,7 @@ const HouseCard3D = () => {
     </div>
   );
 };
+// ─────────────────────────────────────────────────────────────────────────────
 
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
@@ -190,8 +222,8 @@ const Register = () => {
       50%      { transform: rotateX(-4deg) rotateY(6deg) translateY(-14px); }
     }
     @keyframes emojiGlow {
-      0%,100% { filter: drop-shadow(0 8px 24px rgba(14,165,233,0.6)); }
-      50%      { filter: drop-shadow(0 8px 24px rgba(8,145,178,0.7)); }
+      0%,100% { filter: drop-shadow(0 12px 32px rgba(14,165,233,0.6)); }
+      50%      { filter: drop-shadow(0 12px 32px rgba(8,145,178,0.75)); }
     }
     @keyframes orbFloat {
       0%,100% { transform: translate(0,0) scale(1); }
@@ -291,34 +323,84 @@ const Register = () => {
         position: 'relative', zIndex: 2,
       }}>
 
+        {/* ── LEFT PANEL (only this section changed) ── */}
         <div className="reg-left-panel" style={{
           flex: 1.1,
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           padding: '60px 40px', position: 'relative', overflow: 'hidden',
         }}>
           <ParticleCanvas />
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', animation: 'fadeUp 0.7s ease' }}>
-            <HouseCard3D />
+          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', animation: 'fadeUp 0.7s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+            {/* Top tagline pill */}
             <div style={{
-              marginTop: 36, padding: '14px 24px',
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              marginBottom: 22,
+              padding: '8px 18px',
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 16, backdropFilter: 'blur(10px)',
-              display: 'inline-flex', alignItems: 'center', gap: 10,
+              borderRadius: 99,
+              backdropFilter: 'blur(10px)',
             }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#00d4aa', boxShadow: '0 0 8px #00d4aa', display: 'inline-block', animation: 'blink 2s infinite' }} />
-              <span style={{ color: 'rgba(240,244,255,0.6)', fontSize: '0.8rem', fontWeight: 600 }}>
-                Sri Lanka's #1 student boarding platform
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#00d4aa', boxShadow: '0 0 8px #00d4aa', display: 'inline-block', animation: 'blink 2s infinite', flexShrink: 0 }} />
+              <span style={{ color: 'rgba(240,244,255,0.55)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                Sri Lanka's #1 Student Platform
               </span>
             </div>
-            <p style={{
-              marginTop: 28, color: 'rgba(240,244,255,0.4)', fontSize: '0.9rem',
-              lineHeight: 1.7, maxWidth: 340, margin: '24px auto 0',
+
+            {/* Big headline */}
+            <h1 style={{
+              fontFamily: "'Cabinet Grotesk', sans-serif",
+              fontWeight: 800,
+              fontSize: '2.6rem',
+              lineHeight: 1.18,
+              letterSpacing: '-0.025em',
+              color: '#f0f4ff',
+              maxWidth: 380,
+              marginBottom: 14,
             }}>
-              Find the perfect boarding place near your campus with verified listings and zero hassle.
+              Find your{' '}
+              <span style={{
+                background: 'linear-gradient(135deg, #00d4aa, #2de2e6, #0ea5e9)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}>perfect home</span>{' '}
+              away from home
+            </h1>
+
+            {/* Sub-headline */}
+            <p style={{
+              color: 'rgba(240,244,255,0.4)',
+              fontSize: '0.95rem',
+              lineHeight: 1.7,
+              maxWidth: 340,
+              marginBottom: 36,
+            }}>
+              Verified listings near every major campus — no middlemen, no hassle.
             </p>
+
+            {/* 3D card */}
+            <HouseCard3D />
+
+            {/* Bottom badge */}
+            <div style={{
+              marginTop: 28,
+              padding: '12px 22px',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 16,
+              backdropFilter: 'blur(10px)',
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ color: 'rgba(240,244,255,0.55)', fontSize: '0.82rem', fontWeight: 600 }}>
+                🎓 Trusted by thousands of students across Sri Lanka
+              </span>
+            </div>
+
           </div>
         </div>
+        {/* ── END LEFT PANEL ── */}
 
         <div className="reg-right-panel" style={{
           width: '100%', maxWidth: 520,
