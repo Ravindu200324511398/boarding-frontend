@@ -56,6 +56,27 @@ const SHARED_CSS = `
     -webkit-text-fill-color: rgba(220,235,255,0.9) !important;
   }
   select option { background: #0d1b3e; color: #dce9ff; }
+
+  select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300d4aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 12px center !important;
+    padding-right: 2.2rem !important;
+    cursor: pointer;
+  }
+  select:focus {
+    border-color: rgba(0,212,170,0.6) !important;
+    box-shadow: 0 0 0 3px rgba(0,212,170,0.12) !important;
+    outline: none;
+  }
+  select option {
+    background: #0d1b3e;
+    color: #dce9ff;
+  }
+
 `;
 
 /* ─── Particle Canvas ─── */
@@ -421,11 +442,34 @@ const Home = () => {
             </div>
             <div className="col-12 col-md-2">
               <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(180,210,255,0.5)', marginBottom: 8, display: 'block', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Room Type</label>
-              <select name="roomType" style={{ ...inputGlassStyle, cursor: 'pointer' }} value={filters.roomType} onChange={handleFilterChange}>
+              {/* <select name="roomType" style={{ ...inputGlassStyle, cursor: 'pointer' }} value={filters.roomType} onChange={handleFilterChange}>
                 <option value="">All Types</option>
                 <option>Single</option><option>Double</option>
                 <option>Triple</option><option>Annex</option><option>Other</option>
-              </select>
+              </select> */}
+              <select
+  name="roomType"
+  value={filters.roomType}
+  onChange={handleFilterChange}
+  style={{
+    ...inputGlassStyle,
+    cursor: 'pointer',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    appearance: 'none',
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2300d4aa' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 12px center',
+    paddingRight: '2.2rem',
+  }}
+>
+  <option value="">All Types</option>
+  <option>Single</option>
+  <option>Double</option>
+  <option>Triple</option>
+  <option>Annex</option>
+  <option>Other</option>
+</select>
             </div>
             <div className="col-12 col-md-1">
               <button className="reg-submit-btn" onClick={handleApplyFilters} style={{ height: 46, width: '100%', margin: 0, padding: 0, borderRadius: 12 }}>
