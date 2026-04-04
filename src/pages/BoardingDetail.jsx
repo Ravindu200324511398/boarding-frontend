@@ -485,12 +485,35 @@ const BoardingDetail = () => {
         </div>
       )}
 
-      <ConfirmModal isOpen={deleteListingModal} onClose={() => setDeleteListingModal(false)} onConfirm={handleDelete}
+      {/* <ConfirmModal isOpen={deleteListingModal} onClose={() => setDeleteListingModal(false)} onConfirm={handleDelete}
         title="Delete This Listing?" message={`"${boarding.title}" will be permanently removed.`}
         confirmText="Yes, Delete" cancelText="Keep It" type="danger" />
       <ConfirmModal isOpen={deleteRatingModal} onClose={() => setDeleteRatingModal(false)} onConfirm={handleDeleteRating}
         loading={deleteRatingLoading} title="Remove Your Review?" message="Your rating and comment will be permanently deleted."
-        confirmText="Yes, Remove" cancelText="Keep It" type="danger" />
+        confirmText="Yes, Remove" cancelText="Keep It" type="danger" /> */}
+
+        // ✅ Correct
+<ConfirmModal
+  isOpen={deleteListingModal}
+  onCancel={() => setDeleteListingModal(false)}
+  onConfirm={handleDelete}
+  title="Delete This Listing?"
+  message={`"${boarding.title}" will be permanently removed.`}
+  confirmText="Yes, Delete"
+  confirmColor="red"
+  icon="🗑️"
+/>
+
+<ConfirmModal
+  isOpen={deleteRatingModal}
+  onCancel={() => setDeleteRatingModal(false)}
+  onConfirm={handleDeleteRating}
+  title="Remove Your Review?"
+  message="Your rating and comment will be permanently deleted."
+  confirmText="Yes, Remove"
+  confirmColor="red"
+  icon="⭐"
+/>
 
       {/* Hero */}
       <div style={{ position: 'relative', height: 430, background: isDark ? '#060f2a' : '#e8f0fe', overflow: 'hidden', zIndex: 2 }}>
