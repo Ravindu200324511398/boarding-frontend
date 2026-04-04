@@ -6,6 +6,7 @@ import {
 } from "react-icons/fi";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 const IMAGE_BASE = "http://localhost:5001/uploads/";
 
@@ -16,7 +17,119 @@ const AMENITY_OPTIONS = [
 ];
 const ROOM_TYPES = ["Single","Double","Triple","Annex","Studio"];
 
-const CSS = `
+const getTokens = (isDark) => isDark ? {
+  pageBg: '#060f2a',
+  orb1: '#0ea5e944', orb2: '#00d4aa22', orb3: '#06b6d422',
+  gridLine: 'rgba(255,255,255,.018)',
+  headerBg: 'linear-gradient(135deg, rgba(14,165,233,0.2) 0%, rgba(0,212,170,0.12) 100%)',
+  headerBorder: 'rgba(255,255,255,0.08)',
+  sectionBg: 'rgba(255,255,255,0.04)',
+  sectionBorder: 'rgba(255,255,255,0.08)',
+  sectionDivider: 'rgba(255,255,255,0.07)',
+  headingColor: 'rgba(220,233,255,0.9)',
+  subText: 'rgba(220,233,255,0.5)',
+  labelColor: 'rgba(220,233,255,0.45)',
+  inputBg: 'rgba(255,255,255,0.04)',
+  inputBorder: 'rgba(255,255,255,0.1)',
+  inputBorderFocus: 'rgba(0,212,170,0.55)',
+  inputFocusShadow: 'rgba(0,212,170,0.1)',
+  inputFocusBg: 'rgba(0,212,170,0.04)',
+  inputColor: 'rgba(220,233,255,0.9)',
+  inputPlaceholder: 'rgba(220,233,255,0.25)',
+  iconBg: 'rgba(255,255,255,0.02)',
+  iconBorder: 'rgba(255,255,255,0.07)',
+  iconColor: 'rgba(0,212,170,0.65)',
+  accent: '#00d4aa',
+  accentBg: 'rgba(0,212,170,0.15)',
+  accentBorder: 'rgba(0,212,170,0.5)',
+  chipInactiveBg: 'rgba(255,255,255,0.04)',
+  chipInactiveBorder: 'rgba(255,255,255,0.1)',
+  chipInactiveColor: 'rgba(220,233,255,0.5)',
+  chipInactiveHoverBorder: 'rgba(0,212,170,0.3)',
+  chipInactiveHoverColor: 'rgba(220,233,255,0.8)',
+  roomBtnInactiveBg: 'rgba(255,255,255,0.03)',
+  roomBtnInactiveBorder: 'rgba(255,255,255,0.1)',
+  roomBtnInactiveColor: 'rgba(220,233,255,0.5)',
+  cancelBg: 'rgba(255,255,255,0.06)',
+  cancelColor: 'rgba(220,233,255,0.6)',
+  cancelBorder: 'rgba(255,255,255,0.1)',
+  cancelHoverBg: 'rgba(255,255,255,0.1)',
+  imgSlotBorder: 'rgba(255,255,255,0.12)',
+  imgSlotBg: 'rgba(255,255,255,0.03)',
+  imgSlotHoverBorder: 'rgba(0,212,170,0.4)',
+  imgSlotTextColor: 'rgba(220,233,255,0.3)',
+  backBtnBg: 'rgba(255,255,255,0.1)',
+  backBtnBorder: 'rgba(255,255,255,0.15)',
+  backBtnColor: 'rgba(220,233,255,0.8)',
+  backBtnHoverBg: 'rgba(255,255,255,0.16)',
+  hintColor: 'rgba(220,233,255,0.3)',
+  photoHintColor: 'rgba(220,233,255,0.35)',
+  errorBg: 'rgba(239,68,68,0.1)',
+  errorColor: '#fca5a5',
+  errorBorder: 'rgba(239,68,68,0.25)',
+  successBg: 'rgba(0,212,170,0.1)',
+  successColor: '#00d4aa',
+  successBorder: 'rgba(0,212,170,0.25)',
+  btnShadow: 'rgba(0,212,170,0.35)',
+  btnHoverShadow: 'rgba(0,212,170,0.5)',
+} : {
+  pageBg: '#f0f6ff',
+  orb1: '#bae6fd88', orb2: '#99f6e488', orb3: '#e0f2fe88',
+  gridLine: 'rgba(14,165,233,0.06)',
+  headerBg: 'linear-gradient(135deg, rgba(14,165,233,0.12) 0%, rgba(0,212,170,0.08) 100%)',
+  headerBorder: 'rgba(14,165,233,0.15)',
+  sectionBg: 'rgba(255,255,255,0.85)',
+  sectionBorder: 'rgba(14,165,233,0.12)',
+  sectionDivider: 'rgba(14,165,233,0.1)',
+  headingColor: '#0f2a4a',
+  subText: '#5a7a99',
+  labelColor: '#6b8aaa',
+  inputBg: 'rgba(255,255,255,0.9)',
+  inputBorder: 'rgba(14,165,233,0.2)',
+  inputBorderFocus: 'rgba(0,212,170,0.6)',
+  inputFocusShadow: 'rgba(0,212,170,0.12)',
+  inputFocusBg: 'rgba(0,212,170,0.03)',
+  inputColor: '#1a3a5c',
+  inputPlaceholder: '#a0b8cc',
+  iconBg: 'rgba(14,165,233,0.06)',
+  iconBorder: 'rgba(14,165,233,0.12)',
+  iconColor: '#0ea5e9',
+  accent: '#0ea5e9',
+  accentBg: 'rgba(14,165,233,0.1)',
+  accentBorder: 'rgba(14,165,233,0.4)',
+  chipInactiveBg: 'rgba(14,165,233,0.05)',
+  chipInactiveBorder: 'rgba(14,165,233,0.15)',
+  chipInactiveColor: '#5a7a99',
+  chipInactiveHoverBorder: 'rgba(14,165,233,0.35)',
+  chipInactiveHoverColor: '#1a3a5c',
+  roomBtnInactiveBg: 'rgba(14,165,233,0.04)',
+  roomBtnInactiveBorder: 'rgba(14,165,233,0.15)',
+  roomBtnInactiveColor: '#5a7a99',
+  cancelBg: 'rgba(14,165,233,0.08)',
+  cancelColor: '#5a7a99',
+  cancelBorder: 'rgba(14,165,233,0.15)',
+  cancelHoverBg: 'rgba(14,165,233,0.14)',
+  imgSlotBorder: 'rgba(14,165,233,0.2)',
+  imgSlotBg: 'rgba(14,165,233,0.03)',
+  imgSlotHoverBorder: 'rgba(0,212,170,0.45)',
+  imgSlotTextColor: '#a0b8cc',
+  backBtnBg: 'rgba(14,165,233,0.08)',
+  backBtnBorder: 'rgba(14,165,233,0.18)',
+  backBtnColor: '#1a3a5c',
+  backBtnHoverBg: 'rgba(14,165,233,0.15)',
+  hintColor: '#a0b8cc',
+  photoHintColor: '#8aaccc',
+  errorBg: 'rgba(239,68,68,0.07)',
+  errorColor: '#dc2626',
+  errorBorder: 'rgba(239,68,68,0.2)',
+  successBg: 'rgba(0,212,170,0.07)',
+  successColor: '#059669',
+  successBorder: 'rgba(0,212,170,0.2)',
+  btnShadow: 'rgba(0,212,170,0.25)',
+  btnHoverShadow: 'rgba(0,212,170,0.4)',
+};
+
+const makeCSS = (t) => `
   @import url('https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
   @keyframes orbFloat {
@@ -34,13 +147,14 @@ const CSS = `
   }
 
   .edit-section {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: ${t.sectionBg};
+    border: 1px solid ${t.sectionBorder};
     border-radius: 20px;
     padding: 2rem;
     margin-bottom: 1rem;
     backdrop-filter: blur(12px);
     animation: fadeUp 0.5s ease both;
+    box-shadow: 0 4px 24px rgba(14,165,233,0.06);
   }
 
   .edit-submit-btn {
@@ -58,28 +172,28 @@ const CSS = `
     align-items: center;
     gap: 0.5rem;
     animation: shimmerBtn 4s linear infinite;
-    box-shadow: 0 6px 24px rgba(0,212,170,0.35);
+    box-shadow: 0 6px 24px ${t.btnShadow};
     transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
   }
   .edit-submit-btn:hover:not(:disabled) {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 12px 36px rgba(0,212,170,0.5);
+    box-shadow: 0 12px 36px ${t.btnHoverShadow};
   }
   .edit-submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
   .edit-input-wrap {
     display: flex;
     align-items: center;
-    border: 1.5px solid rgba(255,255,255,0.1);
+    border: 1.5px solid ${t.inputBorder};
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.2s;
-    background: rgba(255,255,255,0.04);
+    background: ${t.inputBg};
   }
   .edit-input-wrap.focused {
-    border-color: rgba(0,212,170,0.55);
-    background: rgba(0,212,170,0.04);
-    box-shadow: 0 0 0 3px rgba(0,212,170,0.1);
+    border-color: ${t.inputBorderFocus};
+    background: ${t.inputFocusBg};
+    box-shadow: 0 0 0 3px ${t.inputFocusShadow};
   }
 
   .edit-inp {
@@ -87,60 +201,60 @@ const CSS = `
     padding: 0.75rem 1rem; font-size: 0.93rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
     background: transparent;
-    color: rgba(220,233,255,0.9); width: 100%;
+    color: ${t.inputColor}; width: 100%;
   }
-  .edit-inp::placeholder { color: rgba(220,233,255,0.25); }
+  .edit-inp::placeholder { color: ${t.inputPlaceholder}; }
 
   .edit-inp-icon {
     padding: 0 0.85rem;
-    color: rgba(0,212,170,0.65);
+    color: ${t.iconColor};
     display: flex; align-items: center;
-    border-right: 1px solid rgba(255,255,255,0.07);
-    background: rgba(255,255,255,0.02);
+    border-right: 1px solid ${t.iconBorder};
+    background: ${t.iconBg};
     align-self: stretch;
   }
 
   .edit-label {
     display: block;
     font-size: 0.78rem; font-weight: 700;
-    color: rgba(220,233,255,0.45);
+    color: ${t.labelColor};
     text-transform: uppercase; letter-spacing: 0.08em;
     margin-bottom: 0.45rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
   }
 
   .amenity-chip { padding: 0.4rem 0.9rem; border-radius: 20px; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 500; }
-  .amenity-chip.active { background: rgba(0,212,170,0.15); border: 1.5px solid rgba(0,212,170,0.5); color: #00d4aa; font-weight: 700; }
-  .amenity-chip.inactive { background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.1); color: rgba(220,233,255,0.5); }
-  .amenity-chip.inactive:hover { border-color: rgba(0,212,170,0.3); color: rgba(220,233,255,0.8); }
+  .amenity-chip.active { background: ${t.accentBg}; border: 1.5px solid ${t.accentBorder}; color: ${t.accent}; font-weight: 700; }
+  .amenity-chip.inactive { background: ${t.chipInactiveBg}; border: 1.5px solid ${t.chipInactiveBorder}; color: ${t.chipInactiveColor}; }
+  .amenity-chip.inactive:hover { border-color: ${t.chipInactiveHoverBorder}; color: ${t.chipInactiveHoverColor}; }
 
   .room-btn { padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; font-family: 'Plus Jakarta Sans', sans-serif; }
-  .room-btn.active { border: 1.5px solid rgba(0,212,170,0.6); background: rgba(0,212,170,0.12); color: #00d4aa; font-weight: 700; }
-  .room-btn.inactive { border: 1.5px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: rgba(220,233,255,0.5); font-weight: 500; }
-  .room-btn.inactive:hover { border-color: rgba(0,212,170,0.3); }
+  .room-btn.active { border: 1.5px solid ${t.accentBorder}; background: ${t.accentBg}; color: ${t.accent}; font-weight: 700; }
+  .room-btn.inactive { border: 1.5px solid ${t.roomBtnInactiveBorder}; background: ${t.roomBtnInactiveBg}; color: ${t.roomBtnInactiveColor}; font-weight: 500; }
+  .room-btn.inactive:hover { border-color: ${t.chipInactiveHoverBorder}; }
 
-  .cancel-btn { background: rgba(255,255,255,0.06); color: rgba(220,233,255,0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.9rem 1.8rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; }
-  .cancel-btn:hover { background: rgba(255,255,255,0.1); }
+  .cancel-btn { background: ${t.cancelBg}; color: ${t.cancelColor}; border: 1px solid ${t.cancelBorder}; border-radius: 12px; padding: 0.9rem 1.8rem; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.2s; }
+  .cancel-btn:hover { background: ${t.cancelHoverBg}; }
 
-  .img-slot { border: 2px dashed rgba(255,255,255,0.12); border-radius: 10px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); gap: 0.3rem; cursor: pointer; transition: border-color 0.2s; }
-  .img-slot:hover { border-color: rgba(0,212,170,0.4); }
+  .img-slot { border: 2px dashed ${t.imgSlotBorder}; border-radius: 10px; height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: ${t.imgSlotBg}; gap: 0.3rem; cursor: pointer; transition: border-color 0.2s; }
+  .img-slot:hover { border-color: ${t.imgSlotHoverBorder}; }
 
   .edit-textarea {
-    width: 100%; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 12px;
+    width: 100%; border: 1.5px solid ${t.inputBorder}; border-radius: 12px;
     padding: 0.85rem 1rem; font-size: 0.9rem;
     font-family: 'Plus Jakarta Sans', sans-serif;
     outline: none; resize: vertical;
-    color: rgba(220,233,255,0.9);
-    background: rgba(255,255,255,0.04);
+    color: ${t.inputColor};
+    background: ${t.inputBg};
     transition: border-color 0.2s;
   }
-  .edit-textarea:focus { border-color: rgba(0,212,170,0.55); }
-  .edit-textarea::placeholder { color: rgba(220,233,255,0.25); }
+  .edit-textarea:focus { border-color: ${t.inputBorderFocus}; }
+  .edit-textarea::placeholder { color: ${t.inputPlaceholder}; }
 
   .back-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: rgba(220,233,255,0.8);
+    background: ${t.backBtnBg};
+    border: 1px solid ${t.backBtnBorder};
+    color: ${t.backBtnColor};
     border-radius: 10px;
     padding: 0.45rem 1rem;
     cursor: pointer;
@@ -150,45 +264,32 @@ const CSS = `
     margin-bottom: 1rem;
     transition: background 0.2s;
   }
-  .back-btn:hover { background: rgba(255,255,255,0.16); }
-
-  .coord-input {
-    width: 100%; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 8px;
-    padding: 0.55rem 0.85rem; font-size: 0.85rem;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    color: rgba(220,233,255,0.9); outline: none;
-    background: rgba(255,255,255,0.05); transition: border-color 0.2s;
-  }
-  .coord-input:focus { border-color: rgba(0,212,170,0.5); }
-  .coord-input::placeholder { color: rgba(220,233,255,0.25); }
+  .back-btn:hover { background: ${t.backBtnHoverBg}; }
 
   @media (max-width: 767px) { .edit-section { padding: 1.4rem; } }
 `;
 
-const inpStyle = {
-  border: "none", outline: "none", flex: 1, padding: "0.75rem 1rem",
-  fontSize: "0.93rem", fontFamily: "'Plus Jakarta Sans', sans-serif",
-  background: "transparent", color: "rgba(220,233,255,0.9)", width: "100%"
-};
-
-const InputWrap = ({ icon, children, focused }) => (
+const InputWrap = ({ icon, children, focused, t }) => (
   <div className={`edit-input-wrap${focused ? ' focused' : ''}`}>
     {icon && <span className="edit-inp-icon">{icon}</span>}
     {children}
   </div>
 );
 
-const Field = ({ label, required, children, hint }) => (
+const Field = ({ label, required, children, hint, t }) => (
   <div style={{ marginBottom: "1.2rem" }}>
     <label className="edit-label">
       {label}{required && <span style={{ color: "#ef4444", marginLeft: 3 }}>*</span>}
     </label>
     {children}
-    {hint && <p style={{ fontSize: "0.75rem", color: "rgba(220,233,255,0.3)", margin: "0.3rem 0 0" }}>{hint}</p>}
+    {hint && <p style={{ fontSize: "0.75rem", color: t.hintColor, margin: "0.3rem 0 0" }}>{hint}</p>}
   </div>
 );
 
 const EditBoarding = () => {
+  const { isDark } = useTheme();
+  const t = getTokens(isDark);
+
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -206,6 +307,12 @@ const EditBoarding = () => {
   const [success, setSuccess] = useState("");
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const inpStyle = {
+    border: "none", outline: "none", flex: 1, padding: "0.75rem 1rem",
+    fontSize: "0.93rem", fontFamily: "'Plus Jakarta Sans', sans-serif",
+    background: "transparent", color: t.inputColor, width: "100%"
+  };
 
   useEffect(() => {
     api.get(`/boardings/${id}`).then(res => {
@@ -250,8 +357,8 @@ const EditBoarding = () => {
   };
 
   if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#060f2a' }}>
-      <div className="spinner-border" style={{ color: '#00d4aa', width: '3rem', height: '3rem' }} />
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: t.pageBg }}>
+      <div className="spinner-border" style={{ color: t.accent, width: '3rem', height: '3rem' }} />
     </div>
   );
 
@@ -259,93 +366,102 @@ const EditBoarding = () => {
   const totalPhotos = activeExisting.length + newImages.length;
 
   return (
-    <div style={{ background: '#060f2a', minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative', overflow: 'hidden' }}>
-      <style>{CSS}</style>
+    <div style={{ background: t.pageBg, minHeight: '100vh', fontFamily: "'Plus Jakarta Sans', sans-serif", position: 'relative', overflow: 'hidden', transition: 'background 0.3s' }}>
+      <style>{makeCSS(t)}</style>
 
+      {/* Background Orbs */}
       <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         {[
-          { w: 600, h: 600, color: '#0ea5e944', top: '-150px', left: '-150px', delay: '0s' },
-          { w: 500, h: 500, color: '#00d4aa22', top: '40%', right: '-140px', delay: '-6s' },
-          { w: 400, h: 400, color: '#06b6d422', bottom: '-100px', left: '30%', delay: '-11s' },
+          { w: 600, h: 600, color: t.orb1, top: '-150px', left: '-150px', delay: '0s' },
+          { w: 500, h: 500, color: t.orb2, top: '40%', right: '-140px', delay: '-6s' },
+          { w: 400, h: 400, color: t.orb3, bottom: '-100px', left: '30%', delay: '-11s' },
         ].map((o, i) => (
           <div key={i} style={{ position: 'absolute', borderRadius: '50%', width: o.w, height: o.h, background: `radial-gradient(circle, ${o.color}, transparent 70%)`, filter: 'blur(70px)', top: o.top, left: o.left, right: o.right, bottom: o.bottom, animation: `orbFloat 14s ease-in-out infinite`, animationDelay: o.delay }} />
         ))}
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px), linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)', backgroundSize: '60px 60px' }} />
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `linear-gradient(${t.gridLine} 1px,transparent 1px), linear-gradient(90deg,${t.gridLine} 1px,transparent 1px)`, backgroundSize: '60px 60px' }} />
       </div>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(14,165,233,0.2) 0%, rgba(0,212,170,0.12) 100%)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '2.5rem 0 3.5rem', position: 'relative', zIndex: 2 }}>
+      <div style={{ background: t.headerBg, borderBottom: `1px solid ${t.headerBorder}`, padding: '2.5rem 0 3.5rem', position: 'relative', zIndex: 2 }}>
         <div className="container" style={{ maxWidth: 820 }}>
           <button onClick={() => navigate(-1)} className="back-btn"><FiArrowLeft size={14} /> Back</button>
-          <h1 style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontSize: '1.8rem', fontWeight: 800, color: '#dce9ff', margin: 0 }}>Edit Listing</h1>
-          <p style={{ color: 'rgba(220,233,255,0.5)', margin: 0, fontSize: '0.9rem' }}>Update your boarding listing details</p>
+          <h1 style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontSize: '1.8rem', fontWeight: 800, color: t.headingColor, margin: 0 }}>Edit Listing</h1>
+          <p style={{ color: t.subText, margin: 0, fontSize: '0.9rem' }}>Update your boarding listing details</p>
         </div>
       </div>
 
       <div className="container" style={{ maxWidth: 820, marginTop: '-2rem', paddingBottom: '3rem', position: 'relative', zIndex: 2 }}>
         <form onSubmit={handleSubmit}>
-          {error && <div style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12, padding: '0.85rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}><FiAlertCircle size={15} />{error}</div>}
-          {success && <div style={{ background: 'rgba(0,212,170,0.1)', color: '#00d4aa', border: '1px solid rgba(0,212,170,0.25)', borderRadius: 12, padding: '0.85rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}><FiCheckCircle size={15} />{success}</div>}
+          {error && (
+            <div style={{ background: t.errorBg, color: t.errorColor, border: `1px solid ${t.errorBorder}`, borderRadius: 12, padding: '0.85rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+              <FiAlertCircle size={15} />{error}
+            </div>
+          )}
+          {success && (
+            <div style={{ background: t.successBg, color: t.successColor, border: `1px solid ${t.successBorder}`, borderRadius: 12, padding: '0.85rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+              <FiCheckCircle size={15} />{success}
+            </div>
+          )}
 
           {/* Basic Details */}
           <div className="edit-section">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.4rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.4rem', paddingBottom: '0.8rem', borderBottom: `1px solid ${t.sectionDivider}` }}>
               <span style={{ fontSize: '1.1rem' }}>📋</span>
-              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1rem', color: 'rgba(220,233,255,0.9)' }}>Basic Details</span>
+              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1rem', color: t.headingColor }}>Basic Details</span>
             </div>
             <div className="row g-3">
               <div className="col-12">
-                <Field label="Title" required>
-                  <InputWrap icon={<FiHome size={15} />} focused={focused === "title"}>
+                <Field label="Title" required t={t}>
+                  <InputWrap icon={<FiHome size={15} />} focused={focused === "title"} t={t}>
                     <input value={form.title} onChange={e => set("title", e.target.value)} onFocus={() => setFocused("title")} onBlur={() => setFocused("")} placeholder="Listing title" style={inpStyle} />
                   </InputWrap>
                 </Field>
               </div>
               <div className="col-md-6">
-                <Field label="Location" required>
-                  <InputWrap icon={<FiMapPin size={15} />} focused={focused === "location"}>
+                <Field label="Location" required t={t}>
+                  <InputWrap icon={<FiMapPin size={15} />} focused={focused === "location"} t={t}>
                     <input value={form.location} onChange={e => set("location", e.target.value)} onFocus={() => setFocused("location")} onBlur={() => setFocused("")} placeholder="e.g. Kandy" style={inpStyle} />
                   </InputWrap>
                 </Field>
               </div>
               <div className="col-md-6">
-                <Field label="Monthly Price (LKR)" required>
-                  <InputWrap icon={<FiDollarSign size={15} />} focused={focused === "price"}>
+                <Field label="Monthly Price (LKR)" required t={t}>
+                  <InputWrap icon={<FiDollarSign size={15} />} focused={focused === "price"} t={t}>
                     <input type="number" value={form.price} onChange={e => set("price", e.target.value)} onFocus={() => setFocused("price")} onBlur={() => setFocused("")} placeholder="e.g. 15000" style={inpStyle} />
                   </InputWrap>
                 </Field>
               </div>
               <div className="col-md-6">
-                <Field label="Contact" required>
-                  <InputWrap icon={<FiPhone size={15} />} focused={focused === "contact"}>
+                <Field label="Contact" required t={t}>
+                  <InputWrap icon={<FiPhone size={15} />} focused={focused === "contact"} t={t}>
                     <input value={form.contact} onChange={e => set("contact", e.target.value)} onFocus={() => setFocused("contact")} onBlur={() => setFocused("")} placeholder="e.g. 0771234567" style={inpStyle} />
                   </InputWrap>
                 </Field>
               </div>
               <div className="col-md-6">
-                <Field label="Room Type" required>
+                <Field label="Room Type" required t={t}>
                   <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                    {ROOM_TYPES.map(t => (
-                      <button type="button" key={t} onClick={() => set("roomType", t)} className={`room-btn ${form.roomType === t ? 'active' : 'inactive'}`}>{t}</button>
+                    {ROOM_TYPES.map(ty => (
+                      <button type="button" key={ty} onClick={() => set("roomType", ty)} className={`room-btn ${form.roomType === ty ? 'active' : 'inactive'}`}>{ty}</button>
                     ))}
                   </div>
                 </Field>
               </div>
               <div className="col-12">
-                <Field label="Description" required>
+                <Field label="Description" required t={t}>
                   <textarea value={form.description} onChange={e => set("description", e.target.value)} rows={5} placeholder="Describe your boarding place..." className="edit-textarea" />
                 </Field>
               </div>
               <div className="col-md-6">
-                <Field label="Latitude">
-                  <InputWrap focused={focused === "lat"}>
+                <Field label="Latitude" t={t}>
+                  <InputWrap focused={focused === "lat"} t={t}>
                     <input type="number" step="any" value={form.lat} onChange={e => set("lat", e.target.value)} onFocus={() => setFocused("lat")} onBlur={() => setFocused("")} placeholder="Latitude" style={inpStyle} />
                   </InputWrap>
                 </Field>
               </div>
               <div className="col-md-6">
-                <Field label="Longitude">
-                  <InputWrap focused={focused === "lng"}>
+                <Field label="Longitude" t={t}>
+                  <InputWrap focused={focused === "lng"} t={t}>
                     <input type="number" step="any" value={form.lng} onChange={e => set("lng", e.target.value)} onFocus={() => setFocused("lng")} onBlur={() => setFocused("")} placeholder="Longitude" style={inpStyle} />
                   </InputWrap>
                 </Field>
@@ -355,9 +471,9 @@ const EditBoarding = () => {
 
           {/* Amenities */}
           <div className="edit-section">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.4rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.4rem', paddingBottom: '0.8rem', borderBottom: `1px solid ${t.sectionDivider}` }}>
               <span style={{ fontSize: '1.1rem' }}>✨</span>
-              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1rem', color: 'rgba(220,233,255,0.9)' }}>Amenities</span>
+              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1rem', color: t.headingColor }}>Amenities</span>
             </div>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               {AMENITY_OPTIONS.map(a => {
@@ -373,11 +489,11 @@ const EditBoarding = () => {
 
           {/* Photos */}
           <div className="edit-section">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem', paddingBottom: '0.8rem', borderBottom: `1px solid ${t.sectionDivider}` }}>
               <span style={{ fontSize: '1.1rem' }}>📸</span>
-              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1rem', color: 'rgba(220,233,255,0.9)' }}>Photos ({totalPhotos}/8)</span>
+              <span style={{ fontFamily: "'Cabinet Grotesk', sans-serif", fontWeight: 800, fontSize: '1rem', color: t.headingColor }}>Photos ({totalPhotos}/8)</span>
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'rgba(220,233,255,0.35)', marginBottom: '1rem' }}>First photo is the cover. Click X to remove.</p>
+            <p style={{ fontSize: '0.8rem', color: t.photoHintColor, marginBottom: '1rem' }}>First photo is the cover. Click X to remove.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(120px,1fr))", gap: "0.6rem" }}>
               {activeExisting.map((img, idx) => (
                 <div key={img} style={{ position: "relative", borderRadius: 10, overflow: "hidden", height: 100 }}>
@@ -395,7 +511,10 @@ const EditBoarding = () => {
               ))}
               {totalPhotos < 8 && (
                 <label style={{ cursor: "pointer" }}>
-                  <div className="img-slot"><FiUpload size={20} color="rgba(220,233,255,0.3)" /><span style={{ fontSize: "0.72rem", color: "rgba(220,233,255,0.3)", fontWeight: 600 }}>Add Photo</span></div>
+                  <div className="img-slot">
+                    <FiUpload size={20} color={t.imgSlotTextColor} />
+                    <span style={{ fontSize: "0.72rem", color: t.imgSlotTextColor, fontWeight: 600 }}>Add Photo</span>
+                  </div>
                   <input type="file" accept="image/*" multiple onChange={handleNewImages} style={{ display: "none" }} />
                 </label>
               )}

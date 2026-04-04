@@ -1,6 +1,11 @@
+
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
+//import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider } from './context/ThemeProvider';
+
+
 import { AuthProvider } from './context/AuthContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import Navbar from './components/Navbar';
@@ -44,30 +49,32 @@ function App() {
         <CurrencyProvider>
           <Router>
             <Routes>
-              {/* Public */}
-              <Route path="/" element={<MainLayout><Home /></MainLayout>} />
-              <Route path="/login" element={<MainLayout><Login /></MainLayout>} />
-              <Route path="/register" element={<MainLayout><Register /></MainLayout>} />
-              <Route path="/boarding/:id" element={<MainLayout><BoardingDetail /></MainLayout>} />
-              <Route path="/map" element={<MainLayout><MapPage /></MainLayout>} />
-              <Route path="/compare" element={<MainLayout><ComparePage /></MainLayout>} />
-              <Route path="/forgot-password" element={<MainLayout><ForgotPassword /></MainLayout>} />
-              <Route path="/reset-password/:token" element={<MainLayout><ResetPassword /></MainLayout>} />
+              {/* Public — home, auth, password reset */}
+              <Route path="/"                        element={<MainLayout><Home /></MainLayout>} />
+              <Route path="/login"                   element={<MainLayout><Login /></MainLayout>} />
+              <Route path="/register"                element={<MainLayout><Register /></MainLayout>} />
+              <Route path="/forgot-password"         element={<MainLayout><ForgotPassword /></MainLayout>} />
+              <Route path="/reset-password/:token"   element={<MainLayout><ResetPassword /></MainLayout>} />
+
+              {/* Login-gated pages — require auth */}
+              <Route path="/boarding/:id" element={<MainLayout><ProtectedRoute><BoardingDetail /></ProtectedRoute></MainLayout>} />
+              <Route path="/map"          element={<MainLayout><ProtectedRoute><MapPage /></ProtectedRoute></MainLayout>} />
+              <Route path="/compare"      element={<MainLayout><ProtectedRoute><ComparePage /></ProtectedRoute></MainLayout>} />
 
               {/* Protected user routes */}
-              <Route path="/edit/:id" element={<MainLayout><ProtectedRoute><EditBoarding /></ProtectedRoute></MainLayout>} />
-              <Route path="/add" element={<MainLayout><ProtectedRoute><AddBoarding /></ProtectedRoute></MainLayout>} />
-              <Route path="/my-inquiries" element={<MainLayout><ProtectedRoute><MyInquiriesPage /></ProtectedRoute></MainLayout>} />
-              <Route path="/inquiries" element={<MainLayout><ProtectedRoute><InquiriesPage /></ProtectedRoute></MainLayout>} />
-              <Route path="/favorites" element={<MainLayout><ProtectedRoute><Favorites /></ProtectedRoute></MainLayout>} />
-              <Route path="/profile" element={<MainLayout><ProtectedRoute><Profile /></ProtectedRoute></MainLayout>} />
+              <Route path="/edit/:id"      element={<MainLayout><ProtectedRoute><EditBoarding /></ProtectedRoute></MainLayout>} />
+              <Route path="/add"           element={<MainLayout><ProtectedRoute><AddBoarding /></ProtectedRoute></MainLayout>} />
+              <Route path="/my-inquiries"  element={<MainLayout><ProtectedRoute><MyInquiriesPage /></ProtectedRoute></MainLayout>} />
+              <Route path="/inquiries"     element={<MainLayout><ProtectedRoute><InquiriesPage /></ProtectedRoute></MainLayout>} />
+              <Route path="/favorites"     element={<MainLayout><ProtectedRoute><Favorites /></ProtectedRoute></MainLayout>} />
+              <Route path="/profile"       element={<MainLayout><ProtectedRoute><Profile /></ProtectedRoute></MainLayout>} />
 
               {/* Admin routes */}
-              <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-              <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-              <Route path="/admin/users/:id" element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
-              <Route path="/admin/boardings" element={<AdminRoute><AdminBoardings /></AdminRoute>} />
+              <Route path="/admin"                element={<AdminLogin />} />
+              <Route path="/admin/dashboard"      element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+              <Route path="/admin/users"          element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="/admin/users/:id"      element={<AdminRoute><AdminUserDetail /></AdminRoute>} />
+              <Route path="/admin/boardings"      element={<AdminRoute><AdminBoardings /></AdminRoute>} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
